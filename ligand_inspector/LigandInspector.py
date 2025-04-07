@@ -12,6 +12,23 @@ import pandas as pd
 import asyncio
 import requests
 from bs4 import BeautifulSoup
+from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, MofNCompleteColumn, TimeRemainingColumn, track
+from rich.live import Live
+from rich.spinner import Spinner
+from rich.panel import Panel
+from rich.table import Table
+from contextlib import suppress
+
+
+global CURRENT_ITEMS
+CURRENT_ITEMS = []
+PROGRESS = Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        MofNCompleteColumn(),
+        TimeRemainingColumn(),
+    )
 
 class LigandInspector:
     def __init__(self):
@@ -139,11 +156,12 @@ class LigandInspector:
         """
 
         asyncio.run(self.inspect_batch_async(df, n_workers=n_workers))
+        self.df = self.format_df(self.df)
         return self.df
 
         
 
-    async def worker(self, worker_id, q, session):
+    async def worker(self, worker_id, q, session, live, task):
         """
         worker function for downloading files asynchronously.
 
@@ -151,21 +169,61 @@ class LigandInspector:
             worker_id (int): The ID of the worker.
             q (asyncio.Queue): The queue containing the URLs and file paths.
             session (aiohttp.ClientSession): The aiohttp session.
+            live (rich.live.Live): The rich live object for displaying progress.
+            task (rich.progress.Task): The task object for progress tracking.
         """
         while True:
             row = await q.get()
+            item_id = f"{row['PDB ID']}_{row['Ligand ID']}"
+            CURRENT_ITEMS.append(item_id)
+            CURRENT_ITEMS.sort()
+            state = None
+
+
+            # update live
+            self.update_live(live)
+
             async with session.get(row['url']) as response:
                 if response.status == 200:
                     content = await response.text()
+                    state = "success"
                 else:
                     content = None
-                
+                    state = "failed"
+            
+
             soup = BeautifulSoup(content, 'html.parser')
-            df = self.parse_soup(soup)
-            df["PDB ID"] = row['PDB ID']
-            df["Ligand ID"] = row['Ligand ID']
-            self.df = pd.concat([self.df, df], ignore_index=True)
+            try:
+                df = self.parse_soup(soup)
+                df["PDB ID"] = row['PDB ID']
+                df["Ligand ID"] = row['Ligand ID']
+                self.df = pd.concat([self.df, df], ignore_index=True)
+            except AssertionError:
+                state = "failed"
+
+            if state == "success":
+                live.console.log(item_id + u'\N{check mark}')
+            else:
+                live.console.log(item_id + u'\N{cross mark}')
+
             q.task_done()
+            CURRENT_ITEMS.remove(item_id)
+            self.update_live(live)
+            PROGRESS.update(task, advance=1)
+
+    def update_live(self, live):
+        """
+        Updates the live object with the current state of the items being processed.
+
+        Args:
+            live (rich.live.Live): The rich live object for displaying progress.
+        """
+        table = Table.grid()
+        for i in CURRENT_ITEMS:
+            table.add_row(Spinner("dots", text=f"Processing {i} ..."))
+        # print(f"Current items: {CURRENT_ITEMS}")
+        table.add_row(PROGRESS)
+        live.update(Panel(table))
         
     async def inspect_batch_async(self, df, n_workers=10):
         """
@@ -197,16 +255,19 @@ class LigandInspector:
         async with aiohttp.ClientSession() as session:
             workers = []
             n_workers = min(n_workers, len(df))
-            for i in range(n_workers):
-                task = asyncio.create_task(self.worker(i, q, session))
-                workers.append(task)
+            with Live(refresh_per_second=10) as live:
+                task1 = PROGRESS.add_task("Web scraping ... ", total=len(df))
+                for i in range(n_workers):
+                    task = asyncio.create_task(self.worker(i, q, session, live, task1))
+                    workers.append(task)
 
-            await q.join()
+                await q.join()
 
-        for t in workers:
-            t.cancel()
+        with suppress(asyncio.CancelledError):
+            for t in workers:
+                t.cancel()
 
-        await asyncio.gather(*workers, return_exceptions=True)
+            await asyncio.gather(*workers, return_exceptions=True)
 
         
             
