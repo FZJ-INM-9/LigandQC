@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 
 class LigandInspector:
     def __init__(self):
-        pass
+        self.df = pd.DataFrame()
 
     def build_url(self, pdb_id, ligand_id):
         """
@@ -46,7 +46,10 @@ class LigandInspector:
         url = self.build_url(pdb_id, ligand_id)
         response = requests.get(url)
         soup = BeautifulSoup(response.content, 'html.parser')
-        df = self.parse_soup(soup)
+        try:
+            df = self.parse_soup(soup)
+        except AssertionError:
+            raise ValueError(f"Could not find the table for PDB ID: {pdb_id} and Ligand ID: {ligand_id}, url: {url}")
         df["PDB ID"] = pdb_id
         df["Ligand ID"] = ligand_id
 
@@ -67,6 +70,7 @@ class LigandInspector:
 
         # Extract the table data
         table = soup.find('table', {'id': 'ligand-validation'})
+        assert table is not None
         column_names = []
         for th in table.find_all('th'):
             column_names.append(th.text.strip())
@@ -121,3 +125,88 @@ class LigandInspector:
 
 
         return df
+    
+    def inspect_batch(self, df, n_workers=10):
+        """
+        wrapper function for async inspection of a batch of pdb-ligand pairs.
+
+        Args:
+            df (pd.DataFrame): A DataFrame containing the columns "PDB ID" and "Ligand ID".
+        
+        Returns:
+            pd.DataFrame: A DataFrame containing the inspection results for each pdb-ligand pair.
+        
+        """
+
+        asyncio.run(self.inspect_batch_async(df, n_workers=n_workers))
+        return self.df
+
+        
+
+    async def worker(self, worker_id, q, session):
+        """
+        worker function for downloading files asynchronously.
+
+        Args:
+            worker_id (int): The ID of the worker.
+            q (asyncio.Queue): The queue containing the URLs and file paths.
+            session (aiohttp.ClientSession): The aiohttp session.
+        """
+        while True:
+            row = await q.get()
+            async with session.get(row['url']) as response:
+                if response.status == 200:
+                    content = await response.text()
+                else:
+                    content = None
+                
+            soup = BeautifulSoup(content, 'html.parser')
+            df = self.parse_soup(soup)
+            df["PDB ID"] = row['PDB ID']
+            df["Ligand ID"] = row['Ligand ID']
+            self.df = pd.concat([self.df, df], ignore_index=True)
+            q.task_done()
+        
+    async def inspect_batch_async(self, df, n_workers=10):
+        """
+        Inspects a batch of pdb-ligand pairs using asyncio and aiohttp.
+
+        Args:
+            df (pd.DataFrame): A DataFrame containing the columns "PDB ID" and "Ligand ID".
+            n_workers (int): The number of worker tasks to create.
+        
+        Returns:
+            pd.DataFrame: A DataFrame containing the inspection results for each pdb-ligand pair.
+        
+        """
+
+        if "PDB ID" not in df.columns or "Ligand ID" not in df.columns:
+            raise ValueError("DataFrame must contain 'PDB ID' and 'Ligand ID' columns.")
+        
+        if df.empty:
+            raise ValueError("DataFrame is empty.")
+        
+        # build the urls
+        df["url"] = df.apply(lambda row: self.build_url(row["PDB ID"], row["Ligand ID"]), axis=1)
+
+        q = asyncio.Queue()
+
+        for _, row in df.iterrows():
+            await q.put(row)
+
+        async with aiohttp.ClientSession() as session:
+            workers = []
+            n_workers = min(n_workers, len(df))
+            for i in range(n_workers):
+                task = asyncio.create_task(self.worker(i, q, session))
+                workers.append(task)
+
+            await q.join()
+
+        for t in workers:
+            t.cancel()
+
+        await asyncio.gather(*workers, return_exceptions=True)
+
+        
+            
