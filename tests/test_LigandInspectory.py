@@ -25,3 +25,36 @@ def test_ligand_inspector():
     assert df.loc[0]["Stereochemical errors"] == 0
     assert df.loc[0]["Model completeness"] == 1
     assert df.loc[0]["Average occupancy"] == 0.64
+
+def test_ligand_inspector_invalid_pdb_id():
+    pdb_id = "INVALID"
+    ligand_id = "T1V"
+    li = LigandInspector()
+    with pytest.raises(ValueError):
+        li.inspect_single(pdb_id, ligand_id)
+
+def test_ligand_inspector_invalid_ligand_id():
+    pdb_id = "5REJ"
+    ligand_id = "INVALID"
+    li = LigandInspector()
+    with pytest.raises(ValueError):
+        li.inspect_single(pdb_id, ligand_id)
+    
+def test_ligand_inspector_invalid_pdb_and_ligand_id():
+    pdb_id = "INVALID"
+    ligand_id = "INVALID"
+    li = LigandInspector()
+    with pytest.raises(ValueError):
+        li.inspect_single(pdb_id, ligand_id)
+    
+def test_ligand_inspector_batch_inspection():
+    df = pd.DataFrame({'PDB ID': ["5REJ", "5REJ", "5REJ"],
+                       'Ligand ID': ["T1V", "T1V", "T1V"]}
+                       )
+    li = LigandInspector()
+    results = li.inspect_batch(df)
+    assert results is not None
+    assert isinstance(results, pd.DataFrame)
+    assert not results.empty
+    assert len(results) == 3
+    
