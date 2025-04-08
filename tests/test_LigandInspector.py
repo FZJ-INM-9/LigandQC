@@ -57,4 +57,9 @@ def test_ligand_inspector_batch_inspection():
     assert isinstance(results, pd.DataFrame)
     assert not results.empty
     assert len(results) == 3
-    
+
+def test_plot():
+    file = "tests/input_files/output2.csv"
+    df = pd.read_csv(file)
+    li = LigandInspector()
+    li.plot(df, "tests/output_files/plot.png")
