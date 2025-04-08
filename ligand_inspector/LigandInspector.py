@@ -18,6 +18,8 @@ from rich.spinner import Spinner
 from rich.panel import Panel
 from rich.table import Table
 from contextlib import suppress
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 global CURRENT_ITEMS
@@ -308,5 +310,58 @@ class LigandInspector:
 
             await asyncio.gather(*workers, return_exceptions=True)
 
+    def evaluate(self, df):
+        """
+        evaluates the quality of the ligand using the inspection results based on common rules of thumbs.
+
+        Args:
+            df (pd.DataFrame): A DataFrame containing the inspection results.
         
+        Returns:
+            pd.DataFrame: A DataFrame containing the evaluation results.
+        """
+        # RSCC evaluation: very good (>0.95), ok (0.8-0.95), bad (<0.8)
+        df["RSCC evaluation"] = df["Real space correlation coefficient"].apply(lambda s: "good" if s>0.95 else ("ok" if s>0.8 else "bad"))
+        # RSR factor evaluation: good (<0.4), bad (>=0.4)
+        df["RSR factor evaluation"] = df["Real space R factor"].apply(lambda s: "good" if s<0.4 else "bad")
+
+        df["overall evaluation"] = df.apply(lambda row: "bad" if any([row[i] == "bad" for i in ["RSCC evaluation", "RSR factor evaluation"]]) else "good", axis=1)
+        return df
+
+
             
+    def plot(self, df, filename):
+        """
+        creates plots of the inspection results using seaborn and matplotlib.
+        
+        Args:
+            df (pd.DataFrame): A DataFrame containing the inspection results.
+            filename (str): The filename to save the plot.
+        
+        Returns:
+            None
+        
+        """
+
+        fig, axs = plt.subplots(3, 2, figsize=(10, 10))
+        n_bins = len(df) // 10
+        if n_bins < 1:
+            n_bins = 1
+
+        df = self.evaluate(df)
+
+        sns.histplot(df, x="Ranking for goodness of fit", bins=n_bins,  ax=axs[0,0], hue="RSCC evaluation", multiple="stack")
+        axs[0,0].set_xlim([0, 1])
+        sns.histplot(df, x="Ranking for geometry", bins=n_bins,  ax=axs[0,1], hue="RSCC evaluation", multiple="stack")
+        axs[0,0].set_xlim([0, 1])
+        sns.histplot(df, x="Real space R factor", bins=n_bins,  ax=axs[1,0], hue="RSCC evaluation", multiple="stack")
+        axs[1,0].set_xlim([0, 1])
+        sns.histplot(df, x="Real space correlation coefficient", bins=n_bins,  ax=axs[1,1], hue="RSCC evaluation", multiple="stack")
+        axs[1,1].set_xlim([0, 1])
+        sns.scatterplot(data=df, x="Ranking for goodness of fit", y="Ranking for geometry", ax=axs[2,0], hue="RSCC evaluation")
+        axs[2,0].set_xlim([0, 1])
+        axs[2,0].set_ylim([0, 1])
+        sns.histplot(df, x="Average occupancy", bins=n_bins,  ax=axs[2,1], hue="RSCC evaluation", multiple="stack")
+        axs[2,1].set_xlim([0, 1])
+        plt.tight_layout()
+        plt.savefig(filename)
