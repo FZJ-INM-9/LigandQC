@@ -2,12 +2,13 @@
 
 In this project, we will scrape the ligand quality data from the Protein Data Bank using Python.
 
-> [!WARNING] :construction: Construction Warning
+> [!WARNING] :construction: Construction Warning :construction:
 > This project is under active development and is not yet ready for production use. The code is not fully tested and may contain bugs. Use at your own risk.
 
-# :inbox_tray: Installation
+# :card_file_box: Installation
+To install the package, use one of the following methods.
 
-## From Source
+## :rock: From Source
 First, clone this repository:
 
 ```bash
@@ -24,16 +25,19 @@ micromamba activate ligand_quality
 poetry install
 ```
 
-# Usage
+## :rocket: Package Manager
+No package manager support yet.
 
-Once the virtual environment is activated, you can run the script using the following command:
+# :joystick: Usage
+
+Once the virtual environment is activated, you can use the tool as follows:
 
 ```bash
 ligand_inspector --help
 ```
 
 This will show you the available subcommands, arguments and options. There are two modes of operation: single and batch.
-In the single mode, you can inspect a single ligand by providing its three letter ligand id and the PDB id of the structure it is bound to. The output will be saved to the provided csv file path.
+In the single mode, you can inspect a single ligand by providing the PDB ID of the structure it is bound to and the three letter Ligand ID. The output will be saved to the provided csv file path.
 
 ```bash
 ligand_inspector single 5REJ T1V output.csv
