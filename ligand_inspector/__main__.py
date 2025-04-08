@@ -31,12 +31,15 @@ def main():
 @click.option('--ignore-other-entries', "-ign",
               is_flag=True,
               help="If set, entries in the scraped table that are not in the input file will be removed from the reported file.")
-def single(pdb_id, ligand_id, output_file, ignore_other_entries):
+@click.option("--only-chain", "-oc",
+                type=click.STRING,
+                help="If set, only the specified chain will be inspected.")
+def single(pdb_id, ligand_id, output_file, ignore_other_entries, only_chain):
     """
     Inspect the quality of the ligand <LIGAND_ID> inside <PDB_ID>.pdb from the Protein Data Bank. The results will be saved to <OUTPUT_FILE>.csv
     """
     li = LigandInspector()
-    df = li.inspect_single(pdb_id, ligand_id, ignore_other_entries=ignore_other_entries)
+    df = li.inspect_single(pdb_id, ligand_id, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
     df.to_csv(output_file, index=False)
     click.echo(f"Inspection results saved to {output_file}")
 
@@ -47,13 +50,16 @@ def single(pdb_id, ligand_id, output_file, ignore_other_entries):
               is_flag=True,
               help="If set, entries in the scraped table that are not in the input file will be removed from the reported file.")
 @click.option('--workers', default=10, help='Number of workers for batch inspection.')
-def batch(input_file, output_file, ignore_other_entries, workers):
+@click.option('--only-chain', "-oc",
+                type=click.STRING,
+                help="If set, only the specified chain will be inspected.")
+def batch(input_file, output_file, ignore_other_entries, workers, only_chain):
     """
     Inspect a batch of ligands from a CSV file.
     """
     df = pd.read_csv(input_file)
     li = LigandInspector()
-    results = li.inspect_batch(df, n_workers=workers, ignore_other_entries=ignore_other_entries)
+    results = li.inspect_batch(df, n_workers=workers, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
     results.to_csv(output_file, index=False)
     click.echo(f"Batch inspection results saved to {output_file}")
 

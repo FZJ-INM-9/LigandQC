@@ -47,7 +47,7 @@ class LigandInspector:
         """
         return f"https://www.rcsb.org/ligand-validation/{pdb_id}/{ligand_id}"
     
-    def inspect_single(self, pdb_id, ligand_id, ignore_other_entries=False):
+    def inspect_single(self, pdb_id, ligand_id, ignore_other_entries=False, only_chain=None):
         """
         Inspects a single pdb-ligand pair.
 
@@ -55,6 +55,7 @@ class LigandInspector:
             pdb_id (str): The PDB ID of the protein.
             ligand_id (str): The ligand ID.
             ignore_other_entries (bool): If True, only the entries in the input file will be kept in the output file.
+            only_chain (str): If set, only the specified chain will be reported.
 
         Returns:
             pd.DataFrame: A DataFrame containing the inspection results.
@@ -72,9 +73,31 @@ class LigandInspector:
         df["Ligand ID"] = ligand_id
 
         df = self.format_df(df)
+
+        df = self.filter_df(df, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
+
+        return df
+    
+    def filter_df(self, df, ignore_other_entries=False, only_chain=None):
+        """
+        filters the DataFrame as specified by the input parameters.
+
+        Args:
+            df (pd.DataFrame): The DataFrame to be filtered.
+            ignore_other_entries (bool): If True, only the entries in the input file will be kept in the output file.
+            only_chain (str): If set, only the specified chain will be reported.
+
+        Returns:
+            pd.DataFrame: The filtered DataFrame.
+        
+        """
         if ignore_other_entries:
             # remove entries that are not in the input file
             df = df.loc[df.apply(lambda row: row["Identifier"].startswith(row["PDB ID"] + "_" + row["Ligand ID"]), axis=1)]
+        
+        if only_chain is not None:
+            # remove entries that do not match the chain
+            df = df.loc[df.apply(lambda row: row["Identifier"].startswith(row["PDB ID"] + "_" + row["Ligand ID"] + "_" + only_chain), axis=1)]
 
         return df
 
@@ -153,7 +176,7 @@ class LigandInspector:
         df = df.reset_index(drop=True)
         return df
     
-    def inspect_batch(self, df, n_workers=10, ignore_other_entries=False):
+    def inspect_batch(self, df, n_workers=10, ignore_other_entries=False, only_chain=None):
         """
         wrapper function for async inspection of a batch of pdb-ligand pairs.
 
@@ -161,6 +184,7 @@ class LigandInspector:
             df (pd.DataFrame): A DataFrame containing the columns "PDB ID" and "Ligand ID".
             n_workers (int): The number of worker tasks to create.
             ignore_other_entries (bool): If True, only the entries in the input file will be kept in the output file.
+            only_chain (str): If set, only the specified chain will be reported.
         
         Returns:
             pd.DataFrame: A DataFrame containing the inspection results for each pdb-ligand pair.
@@ -169,9 +193,9 @@ class LigandInspector:
 
         asyncio.run(self.inspect_batch_async(df, n_workers=n_workers))
         self.df = self.format_df(self.df)
-        if ignore_other_entries:
-            # remove entries that are not in the input file
-            self.df = self.df.loc[self.df.apply(lambda row: row["Identifier"].startswith(row["PDB ID"] + "_" + row["Ligand ID"]), axis=1)]
+        
+        self.df = self.filter_df(self.df, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
+
         return self.df
 
         
