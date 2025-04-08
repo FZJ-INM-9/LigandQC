@@ -5,10 +5,10 @@ In this project, we will scrape the ligand quality data from the Protein Data Ba
 > [!WARNING] :construction: Construction Warning :construction:
 > This project is under active development and is not yet ready for production use. The code is not fully tested and may contain bugs. Use at your own risk.
 
-# :card_file_box: Installation
+# :inbox_tray: Installation
 To install the package, use one of the following methods.
 
-## :rock: From Source
+## :card_file_box: From Source
 First, clone this repository:
 
 ```bash
