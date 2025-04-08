@@ -1,6 +1,8 @@
-# Webscraping Ligand Quality
+# :construction: Webscraping Ligand Quality
 
 In this project, we will scrape the ligand quality data from the Protein Data Bank using Python.
+
+This project is under active development and is not yet ready for production use. The code is not fully tested and may contain bugs. Use at your own risk.
 
 ## Installation
 
