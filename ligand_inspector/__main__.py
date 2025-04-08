@@ -28,26 +28,32 @@ def main():
                 type=click.STRING)
 @click.argument('ligand_id')
 @click.argument('output_file')
-def single(pdb_id, ligand_id, output_file):
+@click.option('--ignore-other-entries', "-ign",
+              is_flag=True,
+              help="If set, entries in the scraped table that are not in the input file will be removed from the reported file.")
+def single(pdb_id, ligand_id, output_file, ignore_other_entries):
     """
     Inspect the quality of the ligand <LIGAND_ID> inside <PDB_ID>.pdb from the Protein Data Bank. The results will be saved to <OUTPUT_FILE>.csv
     """
     li = LigandInspector()
-    df = li.inspect_single(pdb_id, ligand_id)
+    df = li.inspect_single(pdb_id, ligand_id, ignore_other_entries=ignore_other_entries)
     df.to_csv(output_file, index=False)
     click.echo(f"Inspection results saved to {output_file}")
 
 @main.command()
 @click.argument('input_file')
 @click.argument('output_file')
+@click.option('--ignore-other-entries', "-ign",
+              is_flag=True,
+              help="If set, entries in the scraped table that are not in the input file will be removed from the reported file.")
 @click.option('--workers', default=10, help='Number of workers for batch inspection.')
-def batch(input_file, output_file, workers):
+def batch(input_file, output_file, ignore_other_entries, workers):
     """
     Inspect a batch of ligands from a CSV file.
     """
     df = pd.read_csv(input_file)
     li = LigandInspector()
-    results = li.inspect_batch(df, n_workers=workers)
+    results = li.inspect_batch(df, n_workers=workers, ignore_other_entries=ignore_other_entries)
     results.to_csv(output_file, index=False)
     click.echo(f"Batch inspection results saved to {output_file}")
 

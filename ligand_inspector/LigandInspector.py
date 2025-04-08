@@ -47,13 +47,14 @@ class LigandInspector:
         """
         return f"https://www.rcsb.org/ligand-validation/{pdb_id}/{ligand_id}"
     
-    def inspect_single(self, pdb_id, ligand_id):
+    def inspect_single(self, pdb_id, ligand_id, ignore_other_entries=False):
         """
         Inspects a single pdb-ligand pair.
 
         Args:
             pdb_id (str): The PDB ID of the protein.
             ligand_id (str): The ligand ID.
+            ignore_other_entries (bool): If True, only the entries in the input file will be kept in the output file.
 
         Returns:
             pd.DataFrame: A DataFrame containing the inspection results.
@@ -71,6 +72,9 @@ class LigandInspector:
         df["Ligand ID"] = ligand_id
 
         df = self.format_df(df)
+        if ignore_other_entries:
+            # remove entries that are not in the input file
+            df = df.loc[df.apply(lambda row: row["Identifier"].startswith(row["PDB ID"] + "_" + row["Ligand ID"]), axis=1)]
 
         return df
 
@@ -139,16 +143,24 @@ class LigandInspector:
                       ]
         for col in int_columns:
             df[col] = df[col].str.replace('-', '0').astype(int)
+        
+        # sort the columns
+        df = df[["PDB ID", "Ligand ID","Identifier"] + percentage_columns + float_columns + int_columns]
 
-
+        # sort the entries according to the PDB ID and Ligand ID
+        df = df.sort_values(by=["PDB ID", "Ligand ID"])
+        # reset the index
+        df = df.reset_index(drop=True)
         return df
     
-    def inspect_batch(self, df, n_workers=10):
+    def inspect_batch(self, df, n_workers=10, ignore_other_entries=False):
         """
         wrapper function for async inspection of a batch of pdb-ligand pairs.
 
         Args:
             df (pd.DataFrame): A DataFrame containing the columns "PDB ID" and "Ligand ID".
+            n_workers (int): The number of worker tasks to create.
+            ignore_other_entries (bool): If True, only the entries in the input file will be kept in the output file.
         
         Returns:
             pd.DataFrame: A DataFrame containing the inspection results for each pdb-ligand pair.
@@ -157,6 +169,9 @@ class LigandInspector:
 
         asyncio.run(self.inspect_batch_async(df, n_workers=n_workers))
         self.df = self.format_df(self.df)
+        if ignore_other_entries:
+            # remove entries that are not in the input file
+            self.df = self.df.loc[self.df.apply(lambda row: row["Identifier"].startswith(row["PDB ID"] + "_" + row["Ligand ID"]), axis=1)]
         return self.df
 
         
