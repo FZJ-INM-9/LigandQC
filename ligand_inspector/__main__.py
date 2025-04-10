@@ -15,6 +15,8 @@ Usage:
 
 
 import click
+import pandas as pd
+import yaml
 
 from .LigandInspector import *
 
@@ -36,11 +38,29 @@ def main():
                 help="If set, only the specified chain will be inspected.")
 def single(pdb_id, ligand_id, output_file, ignore_other_entries, only_chain):
     """
-    Inspect the quality of the ligand <LIGAND_ID> inside <PDB_ID>.pdb from the Protein Data Bank. The results will be saved to <OUTPUT_FILE>.csv
+    Inspect the quality of the ligand <LIGAND_ID> inside <PDB_ID>.pdb from the Protein Data Bank. The results will be saved to <OUTPUT_FILE>. Supported formats are .csv, .xlsx, .json, .yaml, .html, and .txt.
     """
     li = LigandInspector()
     df = li.inspect_single(pdb_id, ligand_id, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
-    df.to_csv(output_file, index=False)
+    df = li.evaluate(df)
+    if output_file.endswith(".yaml") or output_file.endswith(".yml"):
+        with open(output_file, 'w') as f:
+            yaml.dump(df.iloc[0].to_dict(), f)
+    elif output_file.endswith(".json"):
+        df.to_json(output_file, orient='records', lines=True)
+    elif output_file.endswith(".xlsx"):
+        df.to_excel(output_file, index=False)
+    elif output_file.endswith(".html"):
+        df.to_html(output_file, index=False)
+    elif output_file.endswith(".txt"):
+        df.to_csv(output_file, sep='\t', index=False)
+    elif output_file.endswith(".csv"):
+        df.to_csv(output_file, index=False)
+    elif output_file.endswith(".md"):
+        df.to_markdown(output_file, index=False)
+    else:
+        click.echo("Unsupported file format. Please use .csv, .xlsx, .json, .yaml, .yml, .html or .txt.")
+        return
     click.echo(f"Inspection results saved to {output_file}")
 
 @main.command()
@@ -55,12 +75,30 @@ def single(pdb_id, ligand_id, output_file, ignore_other_entries, only_chain):
                 help="If set, only the specified chain will be inspected.")
 def batch(input_file, output_file, ignore_other_entries, workers, only_chain):
     """
-    Inspect a batch of ligands from a CSV file.
+    Inspect a batch of ligands as specified in <INPUT_FILE>. The input file should be a CSV file with columns 'PDB ID' and 'Ligand ID'. The results will be saved to <OUTPUT_FILE>. Supported formats are .csv, .xlsx, .json, .yaml, .html, and .txt.
     """
     df = pd.read_csv(input_file)
     li = LigandInspector()
     results = li.inspect_batch(df, n_workers=workers, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
-    results.to_csv(output_file, index=False)
+    results = li.evaluate(results)
+    if output_file.endswith(".yaml") or output_file.endswith(".yml"):
+        with open(output_file, 'w') as f:
+            yaml.dump(results.to_dict(orient='records'), f)
+    elif output_file.endswith(".json"):
+        results.to_json(output_file, orient='records', lines=True)
+    elif output_file.endswith(".xlsx"):
+        results.to_excel(output_file, index=False)
+    elif output_file.endswith(".html"):
+        results.to_html(output_file, index=False)
+    elif output_file.endswith(".txt"):
+        results.to_csv(output_file, sep='\t', index=False)
+    elif output_file.endswith(".csv"):
+        results.to_csv(output_file, index=False)
+    elif output_file.endswith(".md"):
+        results.to_markdown(output_file, index=False)
+    else:
+        click.echo("Unsupported file format. Please use .csv, .xlsx, .json, .yaml, .yml, .html or .txt.")
+        return
     click.echo(f"Batch inspection results saved to {output_file}")
 
 if __name__ == "__main__":
