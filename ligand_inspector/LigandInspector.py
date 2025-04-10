@@ -33,8 +33,38 @@ PROGRESS = Progress(
     )
 
 class LigandInspector:
-    def __init__(self):
+    def __init__(self, **kwargs):
+        """
+        Initializes the LigandInspector class.
+
+        Args:
+            rsr_factor_threshold_good (float): The threshold for the real space R factor, below which the ligand is considered good, default is 0.4. Everything above is considered bad.
+            rscc_threshold_good (float): The threshold for the real space correlation coefficient, above which the ligand is considered good, default is 0.95.
+            rscc_threshold_ok (float): The threshold for the real space correlation coefficient, above which the ligand is considered ok, default is 0.8. Everything below is considered bad.
+            structural_outliers_threshold_good (int): The threshold for the number of structural outliers, below which the ligand is considered good, default is 5.
+            structural_outliers_threshold_ok (int): The threshold for the number of structural outliers, above which the ligand is considered ok, default is 15. Everything above is considered bad.
+            stereochemical_errors_threshold_good (int): The threshold for the number of stereochemical errors, below which the ligand is considered good, default is 0.
+            average_occupancy_threshold_good (float): The threshold for the average occupancy, above which the ligand is considered good, default is 0.95.
+            average_occupancy_threshold_ok (float): The threshold for the average occupancy, above which the ligand is considered ok, default is 0.5. Everything below is considered bad.
+            atomic_clashes_threshold_good (int): The threshold for the number of atomic clashes, below which the ligand is considered good, default is 0.
+            atomic_clashes_threshold_ok (int): The threshold for the number of atomic clashes, below which the ligand is considered ok, default is 2. Everything above is bad.
+
+        """
+
         self.df = pd.DataFrame()
+        # evaluation criteria
+        self.rsr_factor_threshold_good = kwargs.get("rsr_factor_threshold_good", 0.4)
+        self.rscc_threshold_good = kwargs.get("rscc_threshold_good", 0.95)
+        self.rscc_threshold_ok = kwargs.get("rscc_threshold_ok", 0.8)
+        self.structural_outliers_threshold_good = kwargs.get("structural_outliers_threshold_good", 5)
+        self.structural_outliers_threshold_ok = kwargs.get("structural_outliers_threshold_ok", 15)
+        self.stereochemical_errors_threshold_good = kwargs.get("stereochemical_errors_threshold_good", 0)
+        self.average_occupancy_threshold_good = kwargs.get("average_occupancy_threshold_good", 0.95)
+        self.average_occupancy_threshold_ok = kwargs.get("average_occupancy_threshold_ok", 0.5)
+        self.atomic_clashes_threshold_good = kwargs.get("atomic_clashes_threshold_good", 0)
+        self.atomic_clashes_threshold_ok = kwargs.get("atomic_clashes_threshold_ok", 2)
+
+        
 
     def build_url(self, pdb_id, ligand_id):
         """
@@ -312,7 +342,7 @@ class LigandInspector:
 
     def evaluate(self, df):
         """
-        evaluates the quality of the ligand using the inspection results based on common rules of thumbs.
+        evaluates the quality of the ligand using the inspection results based on the threshold values defined in the constructor.
 
         Args:
             df (pd.DataFrame): A DataFrame containing the inspection results.
@@ -332,26 +362,79 @@ class LigandInspector:
         df = df[df["Chain ID"] == "A"]
 
         df = df.drop(columns=["primary entry", "secondary entry"])
-
-
-
-        # RSCC evaluation: very good (>0.95), ok (0.8-0.95), bad (<0.8)
-        df["RSCC evaluation"] = df["Real space correlation coefficient"].apply(lambda s: "good" if s>0.95 else ("ok" if s>0.8 else "bad"))
-        # RSR factor evaluation: good (<0.4), bad (>=0.4)
-        df["RSR factor evaluation"] = df["Real space R factor"].apply(lambda s: "good" if s<0.4 else "bad")
-
         df.loc[:,"structural outliers"] = df.loc[:,["Outliers of bond length", "Outliers of bond angle"]].sum(axis=1)
 
-        df.loc[:, "structural outliers evaluation"] = df.apply(lambda row: "good" if row["structural outliers"] < 5 else ("ok" if row["structural outliers"] <= 15 else "bad"), axis=1)
-
-        df.loc[:, "Stereochemical errors evaluation"] = df.apply(lambda row: "good" if row["Stereochemical errors"] == 0 else "bad", axis=1)
-
-        df.loc[:, "Average occupancy evaluation"] = df.apply(lambda row: "good" if row["Average occupancy"] >0.95 else ("ok" if row["Average occupancy"] > 0.5 else "bad"), axis=1)
-        df.loc[:, "Atomic clashes evaluation"] = df.apply(lambda row: "good" if row["Atomic clashes"] == 0 else ("ok" if row["Atomic clashes"] <= 2 else "bad"), axis=1)
-
+        df["RSCC evaluation"] = df.apply(self.evaluate_rscc, axis=1)
+        df["RSR factor evaluation"] = df.apply(self.evaluate_rsr_factor, axis=1)
+        df["structural outliers evaluation"] = df.apply(self.evaluate_structural_outliers, axis=1)
+        df["Stereochemical errors evaluation"] = df.apply(self.evaluate_stereochemical_errors, axis=1)
+        df["Average occupancy evaluation"] = df.apply(self.evaluate_occupancy, axis=1)
+        df["Atomic clashes evaluation"] = df.apply(self.evaluate_atomic_clashes, axis=1)
         df["overall evaluation"] = df.apply(lambda row: self.overall_evaluation(row), axis=1)
 
         return df
+    
+    def evaluate_rscc(self, row):
+        """
+        evaluates the RSCC value of the ligand
+        """
+        if row["Real space correlation coefficient"] >= self.rscc_threshold_good:
+            return "good"
+        elif row["Real space correlation coefficient"] >= self.rscc_threshold_ok:
+            return "ok"
+        else:
+            return "bad"
+    
+    def evaluate_rsr_factor(self, row):
+        """
+        evaluates the RSR factor of the ligand
+        """
+        if row["Real space R factor"] <= self.rsr_factor_threshold_good:
+            return "good"
+        else:
+            return "bad"
+
+    def evaluate_structural_outliers(self, row):
+        """
+        evaluates the structural outliers of the ligand
+        """
+        if row["structural outliers"] <= self.structural_outliers_threshold_good:
+            return "good"
+        elif row["structural outliers"] <= self.structural_outliers_threshold_ok:
+            return "ok"
+        else:
+            return "bad"
+        
+    def evaluate_stereochemical_errors(self, row):
+        """
+        evaluates the stereochemical errors of the ligand
+        """
+        if row["Stereochemical errors"] <= self.stereochemical_errors_threshold_good:
+            return "good"
+        else:
+            return "bad"
+    
+    def evaluate_occupancy(self, row):
+        """
+        evaluates the occupancy of the ligand
+        """
+        if row["Average occupancy"] >= self.average_occupancy_threshold_good:
+            return "good"
+        elif row["Average occupancy"] >= self.average_occupancy_threshold_ok:
+            return "ok"
+        else:
+            return "bad"
+        
+    def evaluate_atomic_clashes(self, row):
+        """
+        evaluates the atomic clashes of the ligand
+        """
+        if row["Atomic clashes"] <= self.atomic_clashes_threshold_good:
+            return "good"
+        elif row["Atomic clashes"] <= self.atomic_clashes_threshold_ok:
+            return "ok"
+        else:
+            return "bad"
     
     @staticmethod
     def overall_evaluation(row):
