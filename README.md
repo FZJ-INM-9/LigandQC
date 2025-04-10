@@ -71,14 +71,14 @@ The rule of thumbs go as follows:
 
 | metric                  | Good       | OK            | Bad        | citation                                  |
 |-------------------------|------------|---------------|------------|-------------------------------------------|
-| RSR                     | <=0.4      | -             | > 0.4      | https://doi.org/10.1107/S2059798318002541 |
-| RSCC                    | >=0.95     | >=0.8         | < 0.8      | https://doi.org/10.1107/S2059798318002541 |
+| RSR                     | <= 0.4     | -             | > 0.4      | https://doi.org/10.1107/S2059798318002541 |
+| RSCC                    | >= 0.95    | >= 0.8        | < 0.8      | https://doi.org/10.1107/S2059798318002541 |
 | RMSZ-bond-length        | ?          | ?             | ?          | -                                         |
 | RMSZ-bond-angle         | ?          | ?             | ?          | -                                         |
-| Structural Outliers     | <=5        | <= 15         | >15        | -                                         |
-| Average occupancy       | >=0.95     | >=0.5         | <0.5       | -                                         |
-| Atomic clashes          | ==0        | 1-2           | >2         | -                                         |
-| Stereo-chemical errors  | 0          | -             | >0         | -                                         |
+| Structural Outliers     | <= 5       | <= 15         | > 15       | -                                         |
+| Average occupancy       | >= 0.95    | >= 0.5        | < 0.5      | -                                         |
+| Atomic clashes          | 0          | 1-2           | > 2        | -                                         |
+| Stereo-chemical errors  | 0          | -             | > 0        | https://doi.org/10.1016/j.str.2021.10.003 |
 
 # :alembic: Example
 ```bash
