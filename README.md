@@ -77,7 +77,7 @@ The rule of thumbs go as follows:
 | RMSZ-bond-angle         | ?          | ?             | ?          | -                                         |
 | Structural Outliers     | <= 5       | <= 15         | > 15       | -                                         |
 | Average occupancy       | >= 0.95    | >= 0.5        | < 0.5      | -                                         |
-| Atomic clashes          | 0          | 1-2           | > 2        | -                                         |
+| Atomic clashes          | 0          | <= 2          | > 2        | -                                         |
 | Stereo-chemical errors  | 0          | -             | > 0        | https://doi.org/10.1016/j.str.2021.10.003 |
 
 # :alembic: Example
