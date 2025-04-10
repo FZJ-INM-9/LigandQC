@@ -364,8 +364,8 @@ class LigandInspector:
         df = df.drop(columns=["primary entry", "secondary entry"])
         df.loc[:,"Structural outliers"] = df.loc[:,["Outliers of bond length", "Outliers of bond angle"]].sum(axis=1)
 
-        df["RSCC evaluation"] = df.apply(self.evaluate_rscc, axis=1)
-        df["RSR factor evaluation"] = df.apply(self.evaluate_rsr_factor, axis=1)
+        df["Real space correlation coefficient evaluation"] = df.apply(self.evaluate_rscc, axis=1)
+        df["Real space R factor evaluation"] = df.apply(self.evaluate_rsr_factor, axis=1)
         df["Structural outliers evaluation"] = df.apply(self.evaluate_structural_outliers, axis=1)
         df["Stereochemical errors evaluation"] = df.apply(self.evaluate_stereochemical_errors, axis=1)
         df["Average occupancy evaluation"] = df.apply(self.evaluate_occupancy, axis=1)
@@ -441,7 +441,7 @@ class LigandInspector:
         """
         evaluates the overall quality of the ligand
         """
-        evaluation_columns = ["RSCC evaluation", "RSR factor evaluation", "Stereochemical errors evaluation", "Average occupancy evaluation", "Atomic clashes evaluation", "Structural outliers evaluation"]
+        evaluation_columns = ["Real space correlation coefficient evaluation", "Real space R factor evaluation", "Stereochemical errors evaluation", "Average occupancy evaluation", "Atomic clashes evaluation", "Structural outliers evaluation"]
 
         if any([row[i] == "bad" for i in evaluation_columns]):
             return "bad"
@@ -476,13 +476,13 @@ class LigandInspector:
         colors = {"good": "green", "ok": "yellow", "bad": "orangered"}
         order = {"good": 0, "ok": 1, "bad": 2}
 
-        sns.histplot(df, x="Real space R factor", bins=n_bins,  ax=axs[0,0], hue="RSR factor evaluation", multiple="stack", palette=colors)
+        sns.histplot(df, x="Real space R factor", bins=n_bins,  ax=axs[0,0], hue="Real space R factor evaluation", multiple="stack", palette=colors)
         axs[0,0].set_xlim([0, 1])
 
-        sns.histplot(df, x="Real space correlation coefficient", bins=n_bins,  ax=axs[0,1], hue="RSCC evaluation", multiple="stack", palette=colors)
+        sns.histplot(df, x="Real space correlation coefficient", bins=n_bins,  ax=axs[0,1], hue="Real space correlation coefficient evaluation", multiple="stack", palette=colors)
         axs[0,1].set_xlim([0, 1])
 
-        # sns.scatterplot(data=df, x="Ranking for goodness of fit", y="Ranking for geometry", ax=axs[2,0], hue="RSCC evaluation")
+        # sns.scatterplot(data=df, x="Ranking for goodness of fit", y="Ranking for geometry", ax=axs[2,0], hue="Real space correlation coefficient evaluation")
         # axs[2,0].set_xlim([0, 1])
         # axs[2,0].set_ylim([0, 1])
 
@@ -528,7 +528,7 @@ class LigandInspector:
 
         axs[2,1].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
         axs[2,1].set_xlabel("Average occupancy evaluation")
-        # sns.histplot(df, x="Average occupancy", bins=n_bins,  ax=axs[2,1], hue="RSCC evaluation", multiple="stack")
+        # sns.histplot(df, x="Average occupancy", bins=n_bins,  ax=axs[2,1], hue="Real space correlation coefficient evaluation", multiple="stack")
 
         # pie plot for the overall evaluation
         pie_data = df.groupby("overall evaluation").size()
