@@ -41,8 +41,8 @@ class LigandInspector:
             rsr_factor_threshold_good (float): The threshold for the real space R factor, below which the ligand is considered good, default is 0.4. Everything above is considered bad.
             rscc_threshold_good (float): The threshold for the real space correlation coefficient, above which the ligand is considered good, default is 0.95.
             rscc_threshold_ok (float): The threshold for the real space correlation coefficient, above which the ligand is considered ok, default is 0.8. Everything below is considered bad.
-            structural_outliers_threshold_good (int): The threshold for the number of structural outliers, below which the ligand is considered good, default is 5.
-            structural_outliers_threshold_ok (int): The threshold for the number of structural outliers, above which the ligand is considered ok, default is 15. Everything above is considered bad.
+            structural_outliers_threshold_good (int): The threshold for the number of Structural outliers, below which the ligand is considered good, default is 5.
+            structural_outliers_threshold_ok (int): The threshold for the number of Structural outliers, above which the ligand is considered ok, default is 15. Everything above is considered bad.
             stereochemical_errors_threshold_good (int): The threshold for the number of stereochemical errors, below which the ligand is considered good, default is 0.
             average_occupancy_threshold_good (float): The threshold for the average occupancy, above which the ligand is considered good, default is 0.95.
             average_occupancy_threshold_ok (float): The threshold for the average occupancy, above which the ligand is considered ok, default is 0.5. Everything below is considered bad.
@@ -362,11 +362,11 @@ class LigandInspector:
         df = df[df["Chain ID"] == "A"]
 
         df = df.drop(columns=["primary entry", "secondary entry"])
-        df.loc[:,"structural outliers"] = df.loc[:,["Outliers of bond length", "Outliers of bond angle"]].sum(axis=1)
+        df.loc[:,"Structural outliers"] = df.loc[:,["Outliers of bond length", "Outliers of bond angle"]].sum(axis=1)
 
         df["RSCC evaluation"] = df.apply(self.evaluate_rscc, axis=1)
         df["RSR factor evaluation"] = df.apply(self.evaluate_rsr_factor, axis=1)
-        df["structural outliers evaluation"] = df.apply(self.evaluate_structural_outliers, axis=1)
+        df["Structural outliers evaluation"] = df.apply(self.evaluate_structural_outliers, axis=1)
         df["Stereochemical errors evaluation"] = df.apply(self.evaluate_stereochemical_errors, axis=1)
         df["Average occupancy evaluation"] = df.apply(self.evaluate_occupancy, axis=1)
         df["Atomic clashes evaluation"] = df.apply(self.evaluate_atomic_clashes, axis=1)
@@ -396,11 +396,11 @@ class LigandInspector:
 
     def evaluate_structural_outliers(self, row):
         """
-        evaluates the structural outliers of the ligand
+        evaluates the Structural outliers of the ligand
         """
-        if row["structural outliers"] <= self.structural_outliers_threshold_good:
+        if row["Structural outliers"] <= self.structural_outliers_threshold_good:
             return "good"
-        elif row["structural outliers"] <= self.structural_outliers_threshold_ok:
+        elif row["Structural outliers"] <= self.structural_outliers_threshold_ok:
             return "ok"
         else:
             return "bad"
@@ -441,7 +441,7 @@ class LigandInspector:
         """
         evaluates the overall quality of the ligand
         """
-        evaluation_columns = ["RSCC evaluation", "RSR factor evaluation", "Stereochemical errors evaluation", "Average occupancy evaluation", "Atomic clashes evaluation", "structural outliers evaluation"]
+        evaluation_columns = ["RSCC evaluation", "RSR factor evaluation", "Stereochemical errors evaluation", "Average occupancy evaluation", "Atomic clashes evaluation", "Structural outliers evaluation"]
 
         if any([row[i] == "bad" for i in evaluation_columns]):
             return "bad"
@@ -490,7 +490,7 @@ class LigandInspector:
 
         sns.histplot(df, x="RMSZ-bond-angle", bins=n_bins,  ax=axs[1,0],multiple="stack")
 
-        sns.histplot(df, x="structural outliers", bins=n_bins,  ax=axs[1,1], hue="structural outliers evaluation", multiple="stack", palette=colors)
+        sns.histplot(df, x="Structural outliers", bins=n_bins,  ax=axs[1,1], hue="Structural outliers evaluation", multiple="stack", palette=colors)
 
         # pie plot for atomic clashes
         pie_data = df.groupby("Atomic clashes evaluation").size()
