@@ -325,11 +325,35 @@ class LigandInspector:
         # RSR factor evaluation: good (<0.4), bad (>=0.4)
         df["RSR factor evaluation"] = df["Real space R factor"].apply(lambda s: "good" if s<0.4 else "bad")
 
-        df["overall evaluation"] = df.apply(lambda row: "bad" if any([row[i] == "bad" for i in ["RSCC evaluation", "RSR factor evaluation"]]) else "good", axis=1)
+        df.loc[:,"structural outliers"] = df.loc[:,["Outliers of bond length", "Outliers of bond angle"]].sum(axis=1)
+
+        df.loc[:, "structural outliers evaluation"] = df.apply(lambda row: "good" if row["structural outliers"] < 5 else ("ok" if row["structural outliers"] <= 15 else "bad"), axis=1)
+
+        df.loc[:, "Stereochemical errors evaluation"] = df.apply(lambda row: "good" if row["Stereochemical errors"] == 0 else "bad", axis=1)
+
+        df.loc[:, "Average occupancy evaluation"] = df.apply(lambda row: "good" if row["Average occupancy"] >0.95 else ("ok" if row["Average occupancy"] > 0.5 else "bad"), axis=1)
+        df.loc[:, "Atomic clashes evaluation"] = df.apply(lambda row: "good" if row["Atomic clashes"] == 0 else ("ok" if row["Atomic clashes"] <= 2 else "bad"), axis=1)
+
+        df["overall evaluation"] = df.apply(lambda row: self.overall_evaluation(row), axis=1)
+
         return df
+    
+    @staticmethod
+    def overall_evaluation(row):
+        """
+        evaluates the overall quality of the ligand
+        """
+        evaluation_columns = ["RSCC evaluation", "RSR factor evaluation", "Stereochemical errors evaluation", "Average occupancy evaluation", "Atomic clashes evaluation", "structural outliers evaluation"]
+
+        if any([row[i] == "bad" for i in evaluation_columns]):
+            return "bad"
+        
+        if any([row[i] == "ok" for i in evaluation_columns]):
+            return "ok"
+        
+        return "good"
 
 
-            
     def plot(self, df, filename):
         """
         creates plots of the inspection results using seaborn and matplotlib.
@@ -343,25 +367,87 @@ class LigandInspector:
         
         """
 
-        fig, axs = plt.subplots(3, 2, figsize=(10, 10))
+        fig, axs = plt.subplots(3, 3, figsize=(15, 10))
         n_bins = len(df) // 10
         if n_bins < 1:
             n_bins = 1
 
         df = self.evaluate(df)
 
-        sns.histplot(df, x="Ranking for goodness of fit", bins=n_bins,  ax=axs[0,0], hue="RSCC evaluation", multiple="stack")
+        # plot the histograms
+        # sns.histplot(df, x="Ranking for goodness of fit", bins=n_bins,  ax=axs[0,0], hue="RSCC evaluation", multiple="stack")
+        # axs[0,0].set_xlim([0, 1])
+
+        # sns.histplot(df, x="Ranking for geometry", bins=n_bins,  ax=axs[0,1], hue="RSCC evaluation", multiple="stack")
+        # axs[0,0].set_xlim([0, 1])
+
+        colors = {"good": "green", "ok": "yellow", "bad": "orangered"}
+        order = {"good": 0, "ok": 1, "bad": 2}
+
+        sns.histplot(df, x="Real space R factor", bins=n_bins,  ax=axs[0,0], hue="RSR factor evaluation", multiple="stack", palette=colors)
         axs[0,0].set_xlim([0, 1])
-        sns.histplot(df, x="Ranking for geometry", bins=n_bins,  ax=axs[0,1], hue="RSCC evaluation", multiple="stack")
-        axs[0,0].set_xlim([0, 1])
-        sns.histplot(df, x="Real space R factor", bins=n_bins,  ax=axs[1,0], hue="RSCC evaluation", multiple="stack")
-        axs[1,0].set_xlim([0, 1])
-        sns.histplot(df, x="Real space correlation coefficient", bins=n_bins,  ax=axs[1,1], hue="RSCC evaluation", multiple="stack")
-        axs[1,1].set_xlim([0, 1])
-        sns.scatterplot(data=df, x="Ranking for goodness of fit", y="Ranking for geometry", ax=axs[2,0], hue="RSCC evaluation")
-        axs[2,0].set_xlim([0, 1])
-        axs[2,0].set_ylim([0, 1])
-        sns.histplot(df, x="Average occupancy", bins=n_bins,  ax=axs[2,1], hue="RSCC evaluation", multiple="stack")
-        axs[2,1].set_xlim([0, 1])
+
+        sns.histplot(df, x="Real space correlation coefficient", bins=n_bins,  ax=axs[0,1], hue="RSCC evaluation", multiple="stack", palette=colors)
+        axs[0,1].set_xlim([0, 1])
+
+        # sns.scatterplot(data=df, x="Ranking for goodness of fit", y="Ranking for geometry", ax=axs[2,0], hue="RSCC evaluation")
+        # axs[2,0].set_xlim([0, 1])
+        # axs[2,0].set_ylim([0, 1])
+
+        sns.histplot(df, x="RMSZ-bond-length", bins=n_bins,  ax=axs[0,2], multiple="stack")
+
+        sns.histplot(df, x="RMSZ-bond-angle", bins=n_bins,  ax=axs[1,0],multiple="stack")
+
+        sns.histplot(df, x="structural outliers", bins=n_bins,  ax=axs[1,1], hue="structural outliers evaluation", multiple="stack", palette=colors)
+
+        # pie plot for atomic clashes
+        pie_data = df.groupby("Atomic clashes evaluation").size()
+        pie_data_df = pd.DataFrame(pie_data)
+        pie_data_df = pie_data_df.rename(columns={0: "count"})
+        pie_data_df.loc[:, "color"] = pie_data_df.index.map(lambda x: colors[x.split(" ")[0]])
+        pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
+        labels_map = {"good": "good (0)", "ok": "ok (1-2)", "bad": "bad (>2)"}
+        pie_data_df = pie_data_df.rename(index=labels_map)
+
+        axs[1,2].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
+        axs[1,2].set_xlabel("Atomic clashes")
+
+        # pie plot for the steriochemical errors
+        pie_data = df.groupby("Stereochemical errors evaluation").size()
+        pie_data_df = pd.DataFrame(pie_data)
+        pie_data_df = pie_data_df.rename(columns={0: "count"})
+        pie_data_df.loc[:, "color"] = pie_data_df.index.map(lambda x: colors[x.split(" ")[0]])
+        pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
+        labels_map = {"good": "good (0)", "bad": "bad (>0)"}
+        pie_data_df = pie_data_df.rename(index=labels_map)
+
+        axs[2,0].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
+        axs[2,0].set_xlabel("Stereochemical errors")
+
+        # pie plot for the average occupancy
+        pie_data = df.groupby("Average occupancy evaluation").size()
+        pie_data_df = pd.DataFrame(pie_data)
+        pie_data_df = pie_data_df.rename(columns={0: "count"})
+        pie_data_df.loc[:, "color"] = pie_data_df.index.map(lambda x: colors[x.split(" ")[0]])
+        print(pie_data_df)
+        pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
+        labels_map = {"good": "good (>0.95)", "ok": "ok (0.5-0.95)", "bad": "bad (<0.5)"}
+        pie_data_df = pie_data_df.rename(index=labels_map)
+
+        axs[2,1].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
+        axs[2,1].set_xlabel("Average occupancy evaluation")
+        # sns.histplot(df, x="Average occupancy", bins=n_bins,  ax=axs[2,1], hue="RSCC evaluation", multiple="stack")
+
+        # pie plot for the overall evaluation
+        pie_data = df.groupby("overall evaluation").size()
+        pie_data_df = pd.DataFrame(pie_data)
+        pie_data_df = pie_data_df.rename(columns={0: "count"})
+        pie_data_df.loc[:, "color"] = pie_data_df.index.map(lambda x: colors[x.split(" ")[0]])
+        pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
+
+        axs[2,2].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
+        axs[2,2].set_xlabel("Overall evaluation")
+        
+
         plt.tight_layout()
         plt.savefig(filename)
