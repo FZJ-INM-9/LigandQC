@@ -320,6 +320,21 @@ class LigandInspector:
         Returns:
             pd.DataFrame: A DataFrame containing the evaluation results.
         """
+
+        # check Ligand occurence in PDB
+        df.loc[:,"primary entry"] = df.apply(lambda row: row["Identifier"].startswith(row["PDB ID"]), axis=1)
+        df["secondary entry"] = df.apply(lambda row: not row["primary entry"], axis=1)
+
+        df.loc[:, "Ligand occurence in PDB"] = df.apply(lambda row: df.groupby("PDB ID").get_group(row["PDB ID"])["secondary entry"].sum() +1, axis=1)
+        df = df[df["primary entry"]]
+
+        df.loc[:, "Chain ID"] = df.apply(lambda row: row["Identifier"].split("_")[2], axis=1)
+        df = df[df["Chain ID"] == "A"]
+
+        df = df.drop(columns=["primary entry", "secondary entry"])
+
+
+
         # RSCC evaluation: very good (>0.95), ok (0.8-0.95), bad (<0.8)
         df["RSCC evaluation"] = df["Real space correlation coefficient"].apply(lambda s: "good" if s>0.95 else ("ok" if s>0.8 else "bad"))
         # RSR factor evaluation: good (<0.4), bad (>=0.4)
@@ -367,19 +382,13 @@ class LigandInspector:
         
         """
 
-        fig, axs = plt.subplots(3, 3, figsize=(15, 10))
+        fig, axs = plt.subplots(4, 3, figsize=(15, 15))
         n_bins = len(df) // 10
         if n_bins < 1:
             n_bins = 1
 
         df = self.evaluate(df)
 
-        # plot the histograms
-        # sns.histplot(df, x="Ranking for goodness of fit", bins=n_bins,  ax=axs[0,0], hue="RSCC evaluation", multiple="stack")
-        # axs[0,0].set_xlim([0, 1])
-
-        # sns.histplot(df, x="Ranking for geometry", bins=n_bins,  ax=axs[0,1], hue="RSCC evaluation", multiple="stack")
-        # axs[0,0].set_xlim([0, 1])
 
         colors = {"good": "green", "ok": "yellow", "bad": "orangered"}
         order = {"good": 0, "ok": 1, "bad": 2}
@@ -448,6 +457,22 @@ class LigandInspector:
         axs[2,2].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
         axs[2,2].set_xlabel("Overall evaluation")
         
+
+        # plot the histograms
+        sns.histplot(df, x="Ranking for goodness of fit", bins=n_bins,  ax=axs[3,0])
+        axs[3,0].set_xlim([0, 1])
+
+        sns.histplot(df, x="Ranking for geometry", bins=n_bins,  ax=axs[3,1])
+        axs[3,1].set_xlim([0, 1])
+
+        # plot the occurence of the ligand in the PDB as a pie chart
+        pie_data = df.groupby("Ligand occurence in PDB").size()
+        pie_data_df = pd.DataFrame(pie_data)
+        pie_data_df = pie_data_df.rename(columns={0: "count"})
+        pie_data_df.sort_index(inplace=True)
+        axs[3,2].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, counterclock=False)
+        axs[3,2].set_xlabel("Ligand occurence in PDB")
+
 
         plt.tight_layout()
         plt.savefig(filename)
