@@ -109,7 +109,7 @@ The size of the true population was chosen to be 1E7, which is large enough to b
 
 # :alembic: Example
 ```bash
-ligand_inspector single 7TLL 4WI output.yaml --explain
+ligand_inspector single 7TLL 4WI output.yaml --only-chain "A" --ignore-other-entries
 ```
 
 yields the following output:
@@ -128,7 +128,9 @@ Outliers of bond angle: 5
 Outliers of bond length: 3
 PDB ID: 7TLL
 RMSZ-bond-angle: 1.23
+RMSZ-bond-angle evaluation: ok
 RMSZ-bond-length: 1.43
+RMSZ-bond-length evaluation: ok
 Ranking for geometry: 0.33
 Ranking for goodness of fit: 0.71
 Real space R factor: 0.09
