@@ -10,6 +10,7 @@ It downloads the idealized ligand in sdf format using asynchronous http requests
 import os
 import asyncio
 import aiohttp
+from .Logger import logger
 
 class LigandDownloader:
     """
@@ -47,7 +48,8 @@ class LigandDownloader:
             if response.status == 200:
                 return await response.text()
             else:
-                raise Exception(f"Failed to download {ligand_id}: {response.status}")
+                logger.error(f"Failed to download ligand {ligand_id}. Status code: {response.status}. Please check if the sdf file is available under the following link: {url}")
+                raise ValueError(f"Failed to download ligand {ligand_id}. Status code: {response.status}")
         
     async def download_single_ligand_async(self, ligand_id):
         """

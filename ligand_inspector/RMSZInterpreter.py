@@ -90,6 +90,8 @@ class RMSZInterpreter:
         Returns:
             float: RMSZ threshold for the molecule.
         """
+        if mol is None:
+            return 1
         n = self.get_bond_count(mol)
         return self.find_rmsz_threshold(n)
     
@@ -103,6 +105,8 @@ class RMSZInterpreter:
         Returns:
             float: RMSZ threshold for the molecule.
         """
+        if mol is None:
+            return 1
         n = self.get_angle_count(mol)
         return self.find_rmsz_threshold(n)
     

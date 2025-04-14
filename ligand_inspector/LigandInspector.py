@@ -23,7 +23,8 @@ import seaborn as sns
 from .RMSZInterpreter import RMSZInterpreter
 from .LigandDownloader import LigandDownloader
 from rdkit import Chem
-
+from .Logger import logger
+from rdkit import RDLogger
 
 global CURRENT_ITEMS
 CURRENT_ITEMS = []
@@ -69,7 +70,8 @@ class LigandInspector:
 
         self.ligand_downloader = LigandDownloader()
         self.rmsz_interpreter = RMSZInterpreter()
-        
+        logger.debug("Starting LigandInspector")
+
 
     def build_url(self, pdb_id, ligand_id):
         """
@@ -99,24 +101,7 @@ class LigandInspector:
 
         """
         df = pd.DataFrame([{"PDB ID": pdb_id, "Ligand ID": ligand_id}])
-
         df = self.inspect_batch(df, n_workers=1, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
-
-        # url = self.build_url(pdb_id, ligand_id)
-        # response = requests.get(url)
-        # soup = BeautifulSoup(response.content, 'html.parser')
-        # try:
-        #     df = self.parse_soup(soup)
-        # except AssertionError:
-        #     raise ValueError(f"Could not find the table for PDB ID: {pdb_id} and Ligand ID: {ligand_id}, url: {url}")
-        # df["PDB ID"] = pdb_id
-        # df["Ligand ID"] = ligand_id
-
-        # df = self.format_df(df)
-        
-
-        # df = self.filter_df(df, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
-
         return df
     
     def filter_df(self, df, ignore_other_entries=False, only_chain=None):
@@ -269,7 +254,9 @@ class LigandInspector:
                     state = "success"
                 else:
                     content = None
+                    logger.error(f"Failed to download the ligand metrics from RCSB for {item_id}. Status code: {response.status}. Please check if the system is available under the following link: {row['url']}")
                     state = "failed"
+                             
 
             soup = BeautifulSoup(content, 'html.parser')
             try:
@@ -277,19 +264,22 @@ class LigandInspector:
                 df["PDB ID"] = row['PDB ID']
                 df["Ligand ID"] = row['Ligand ID']
             except AssertionError:
+                logger.error(f"Failed to obtain the table with ligand metrics from RCSB for {item_id}. Please check if the ligand validation report is available for this PDB ID and ligand ID.")
                 state = "failed"
 
             # download the ligand sdf file
-            ligand_sdf = await self.ligand_downloader.download_ligand_async(row["Ligand ID"], session)
+            try:
+                ligand_sdf = await self.ligand_downloader.download_ligand_async(row["Ligand ID"], session)
+            except ValueError:
+                state = "failed"
+                ligand_sdf = None
             df.loc[:, "Ligand sdf"] = ligand_sdf
             
 
             # wrapping up
             self.df = pd.concat([self.df, df], ignore_index=True)
             if state == "success":
-                live.console.log(item_id + u'\N{check mark}')
-            else:
-                live.console.log(item_id + u'\N{cross mark}')
+                logger.info(f"{item_id} webscraping successful {u'\N{check mark}'}")
 
             q.task_done()
             CURRENT_ITEMS.remove(item_id)
@@ -404,9 +394,14 @@ class LigandInspector:
         Returns:
             rdkit.Chem.Mol: The loaded molecule.
         """
+        if sdf_block is None:
+            return None
+        
+        RDLogger.DisableLog('rdApp.*')
         suppl = Chem.SDMolSupplier()
         suppl.SetData(sdf_block)
         mol = next(suppl)
+        RDLogger.EnableLog('rdApp.*')
         return mol
     
     def evaluate_rmsz_bond_length(self, row):
