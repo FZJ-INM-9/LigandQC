@@ -20,6 +20,9 @@ from rich.table import Table
 from contextlib import suppress
 import matplotlib.pyplot as plt
 import seaborn as sns
+from .RMSZInterpreter import RMSZInterpreter
+from .LigandDownloader import LigandDownloader
+from rdkit import Chem
 
 
 global CURRENT_ITEMS
@@ -64,6 +67,8 @@ class LigandInspector:
         self.atomic_clashes_threshold_good = kwargs.get("atomic_clashes_threshold_good", 0)
         self.atomic_clashes_threshold_ok = kwargs.get("atomic_clashes_threshold_ok", 2)
 
+        self.ligand_downloader = LigandDownloader()
+        self.rmsz_interpreter = RMSZInterpreter()
         
 
     def build_url(self, pdb_id, ligand_id):
@@ -93,20 +98,24 @@ class LigandInspector:
             pd.DataFrame: A DataFrame containing the inspection results.
 
         """
+        df = pd.DataFrame([{"PDB ID": pdb_id, "Ligand ID": ligand_id}])
 
-        url = self.build_url(pdb_id, ligand_id)
-        response = requests.get(url)
-        soup = BeautifulSoup(response.content, 'html.parser')
-        try:
-            df = self.parse_soup(soup)
-        except AssertionError:
-            raise ValueError(f"Could not find the table for PDB ID: {pdb_id} and Ligand ID: {ligand_id}, url: {url}")
-        df["PDB ID"] = pdb_id
-        df["Ligand ID"] = ligand_id
+        df = self.inspect_batch(df, n_workers=1, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
 
-        df = self.format_df(df)
+        # url = self.build_url(pdb_id, ligand_id)
+        # response = requests.get(url)
+        # soup = BeautifulSoup(response.content, 'html.parser')
+        # try:
+        #     df = self.parse_soup(soup)
+        # except AssertionError:
+        #     raise ValueError(f"Could not find the table for PDB ID: {pdb_id} and Ligand ID: {ligand_id}, url: {url}")
+        # df["PDB ID"] = pdb_id
+        # df["Ligand ID"] = ligand_id
 
-        df = self.filter_df(df, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
+        # df = self.format_df(df)
+        
+
+        # df = self.filter_df(df, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
 
         return df
     
@@ -200,7 +209,7 @@ class LigandInspector:
             df[col] = df[col].str.replace('-', '0').astype(int)
         
         # sort the columns
-        df = df[["PDB ID", "Ligand ID","Identifier"] + percentage_columns + float_columns + int_columns]
+        df = df[["PDB ID", "Ligand ID", "Identifier"] + percentage_columns + float_columns + int_columns + ["Ligand sdf"]]
 
         # sort the entries according to the PDB ID and Ligand ID
         df = df.sort_values(by=["PDB ID", "Ligand ID"])
@@ -250,10 +259,10 @@ class LigandInspector:
             CURRENT_ITEMS.sort()
             state = None
 
-
             # update live
             self.update_live(live)
 
+            # download the table with ligand metrics from RCSB
             async with session.get(row['url']) as response:
                 if response.status == 200:
                     content = await response.text()
@@ -261,17 +270,22 @@ class LigandInspector:
                 else:
                     content = None
                     state = "failed"
-            
 
             soup = BeautifulSoup(content, 'html.parser')
             try:
                 df = self.parse_soup(soup)
                 df["PDB ID"] = row['PDB ID']
                 df["Ligand ID"] = row['Ligand ID']
-                self.df = pd.concat([self.df, df], ignore_index=True)
             except AssertionError:
                 state = "failed"
 
+            # download the ligand sdf file
+            ligand_sdf = await self.ligand_downloader.download_ligand_async(row["Ligand ID"], session)
+            df.loc[:, "Ligand sdf"] = ligand_sdf
+            
+
+            # wrapping up
+            self.df = pd.concat([self.df, df], ignore_index=True)
             if state == "success":
                 live.console.log(item_id + u'\N{check mark}')
             else:
@@ -340,12 +354,14 @@ class LigandInspector:
 
             await asyncio.gather(*workers, return_exceptions=True)
 
-    def evaluate(self, df):
+    def evaluate(self, df, ignore_other_entries=False, only_chain=None):
         """
         evaluates the quality of the ligand using the inspection results based on the threshold values defined in the constructor.
 
         Args:
             df (pd.DataFrame): A DataFrame containing the inspection results.
+            ignore_other_entries (bool): If True, only the entries in the input file will be kept in the output file.
+            only_chain (str): If set, only the specified chain will be reported.
         
         Returns:
             pd.DataFrame: A DataFrame containing the evaluation results.
@@ -356,10 +372,12 @@ class LigandInspector:
         df["secondary entry"] = df.apply(lambda row: not row["primary entry"], axis=1)
 
         df.loc[:, "Ligand occurence in PDB"] = df.apply(lambda row: df.groupby("PDB ID").get_group(row["PDB ID"])["secondary entry"].sum() +1, axis=1)
-        df = df[df["primary entry"]]
+        if ignore_other_entries:
+            df = df[df["primary entry"]]
 
         df.loc[:, "Chain ID"] = df.apply(lambda row: row["Identifier"].split("_")[2], axis=1)
-        df = df[df["Chain ID"] == "A"]
+        if only_chain is not None:
+            df = df[df["Chain ID"] == only_chain]
 
         df = df.drop(columns=["primary entry", "secondary entry"])
         df.loc[:,"Structural outliers"] = df.loc[:,["Outliers of bond length", "Outliers of bond angle"]].sum(axis=1)
@@ -370,9 +388,40 @@ class LigandInspector:
         df["Stereochemical errors evaluation"] = df.apply(self.evaluate_stereochemical_errors, axis=1)
         df["Average occupancy evaluation"] = df.apply(self.evaluate_occupancy, axis=1)
         df["Atomic clashes evaluation"] = df.apply(self.evaluate_atomic_clashes, axis=1)
+        df["RMSZ-bond-length evaluation"] = df.apply(self.evaluate_rmsz_bond_length, axis=1)
+        df["RMSZ-bond-angle evaluation"] = df.apply(self.evaluate_rmsz_bond_angle, axis=1)
         df["overall evaluation"] = df.apply(lambda row: self.overall_evaluation(row), axis=1)
 
         return df
+    
+    def load_mol_from_sdf_block(self, sdf_block):
+        """
+        Loads a molecule from an SDF block.
+
+        Args:
+            sdf_block (str): The SDF block containing the molecule data.
+        
+        Returns:
+            rdkit.Chem.Mol: The loaded molecule.
+        """
+        suppl = Chem.SDMolSupplier()
+        suppl.SetData(sdf_block)
+        mol = next(suppl)
+        return mol
+    
+    def evaluate_rmsz_bond_length(self, row):
+        """
+        evaluates the RMSZ-bond-length of the ligand
+        """
+        mol = self.load_mol_from_sdf_block(row["Ligand sdf"])
+        return self.rmsz_interpreter.interpret_molecule(mol, row["RMSZ-bond-length"], mode="bond")
+    
+    def evaluate_rmsz_bond_angle(self, row):
+        """
+        evaluates the RMSZ-bond-angle of the ligand
+        """
+        mol = self.load_mol_from_sdf_block(row["Ligand sdf"])
+        return self.rmsz_interpreter.interpret_molecule(mol, row["RMSZ-bond-angle"], mode="angle")
     
     def evaluate_rscc(self, row):
         """
@@ -441,7 +490,7 @@ class LigandInspector:
         """
         evaluates the overall quality of the ligand
         """
-        evaluation_columns = ["Real space correlation coefficient evaluation", "Real space R factor evaluation", "Stereochemical errors evaluation", "Average occupancy evaluation", "Atomic clashes evaluation", "Structural outliers evaluation"]
+        evaluation_columns = [i for i in row.index if "evaluation" in i]
 
         if any([row[i] == "bad" for i in evaluation_columns]):
             return "bad"

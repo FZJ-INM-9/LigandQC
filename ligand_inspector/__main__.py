@@ -32,6 +32,7 @@ def main():
 @click.argument('output_file')
 @click.option('--ignore-other-entries', "-ign",
               is_flag=True,
+              default=False,
               help="If set, entries in the scraped table that are not in the input file will be removed from the reported file.")
 @click.option("--only-chain", "-oc",
                 type=click.STRING,
@@ -43,6 +44,8 @@ def single(pdb_id, ligand_id, output_file, ignore_other_entries, only_chain):
     li = LigandInspector()
     df = li.inspect_single(pdb_id, ligand_id, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
     df = li.evaluate(df)
+    # drop the 'Ligand sdf' column
+    df = df.drop(columns=['Ligand sdf'], errors='ignore')
     if output_file.endswith(".yaml") or output_file.endswith(".yml"):
         with open(output_file, 'w') as f:
             yaml.dump(df.iloc[0].to_dict(), f)
