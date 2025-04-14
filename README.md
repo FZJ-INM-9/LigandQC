@@ -73,22 +73,22 @@ The rule of thumbs go as follows:
 |-------------------------|------------|---------------|------------|-------------------------------------------|
 | RSR                     | <= 0.4     | -             | > 0.4      | https://doi.org/10.1107/S2059798318002541 |
 | RSCC                    | >= 0.95    | >= 0.8        | < 0.8      | https://doi.org/10.1107/S2059798318002541 |
-| RMSZ-bond-length        | *          | <= 2.0        | > 2.0      | https://support.ccdc.cam.ac.uk/support/solutions/articles/103000306395-what-is-the-z-score-listed-in-the-summary-statistics-for-each-3d-bond-and-valence-angle-search-result                             |
-| RMSZ-bond-angle         | *          | <= 2.0        | > 2.0      | https://support.ccdc.cam.ac.uk/support/solutions/articles/103000306395-what-is-the-z-score-listed-in-the-summary-statistics-for-each-3d-bond-and-valence-angle-search-result                             |
+| RMSZ-bond-length        | *          | <= 2.0        | > 2.0      | [Link to Mogul FAQ](https://support.ccdc.cam.ac.uk/support/solutions/articles/103000306395-what-is-the-z-score-listed-in-the-summary-statistics-for-each-3d-bond-and-valence-angle-search-result)<br>accessed 2024-04-14                             |
+| RMSZ-bond-angle         | *          | <= 2.0        | > 2.0      | [Link to Mogul FAQ](https://support.ccdc.cam.ac.uk/support/solutions/articles/103000306395-what-is-the-z-score-listed-in-the-summary-statistics-for-each-3d-bond-and-valence-angle-search-result)<br>accessed 2024-04-14                             |
 | Structural Outliers     | <= 5       | <= 15         | > 15       | -                                         |
 | Average occupancy       | >= 0.95    | >= 0.5        | < 0.5      | -                                         |
 | Atomic clashes          | 0          | <= 2          | > 2        | -                                         |
 | Stereo-chemical errors  | 0          | -             | > 0        | https://doi.org/10.1016/j.str.2021.10.003 |
 
 ## :rotating_light: RMSZ values
-The Z-value \(Z_i\) describes the deviation of a value \(X_i\) from the mean of a population \(\mu\) in units of standard deviation \(\sigma\).
+The Z-value $Z_i$ describes the deviation of a value $X_i$ from the mean of a population $\mu$ in units of standard deviation $\sigma$.
 The Z-value is calculated as follows:
 
 ```math
 Z_i = \frac{X_i - \mu}{\sigma}
 ```
 
-Where \(N\) is the number of values, the RMSZ value is calculated as follows:
+Where $N$ is the number of values, the $RMSZ$ value is calculated as follows:
 
 ```math
 RMSZ = \sqrt{\frac{1}{N} \sum_{i=1}^{N} Z_i^2}
