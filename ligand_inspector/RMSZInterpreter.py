@@ -19,9 +19,6 @@ import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind
 import seaborn as sns
 from .LigandDownloader import LigandDownloader
-from rdkit import Chem
-from rdkit.Chem.Draw.rdMolDraw2D import MolDraw2DSVG, MolDrawOptions
-from rdkit.Chem import AllChem
 
 
 def generate_dataset(mean, std_dev, size=1000):
@@ -55,24 +52,19 @@ class RMSZInterpreter:
         self.ok_bad_threshold = 2.0
         self.precomputed_rmsz_thresholds = {}
     
-    def interpret_molecule(self, mol, rmsz, mode="bond"):
+    def interpret_rmsz(self, n, rmsz):
         """
-        Interpret the RMSZ value of a molecule.
+        Interpret the RMSZ value of a distribution.
         
         Parameters:
-            mol (object): The molecule object to interpret.
-            rmsz (float): The RMSZ value of the molecule.
+            n (int): sample size
+            rmsz (float): The RMSZ value of the distribution.
             mode (str): The mode of interpretation ("bond" or "angle").
             
         Returns:
             str: Interpretation of the RMSZ value.
         """
-        if mode == "bond":
-            rmsz_threshold = self.find_rmsz_threshold_bond(mol)
-        elif mode == "angle":
-            rmsz_threshold = self.find_rmsz_threshold_angle(mol)
-        else:
-            raise ValueError("Invalid mode. Choose 'bond' or 'angle'.")
+        rmsz_threshold = self.find_rmsz_threshold(n)
 
         if rmsz <= rmsz_threshold:
             return "good"
@@ -80,121 +72,6 @@ class RMSZInterpreter:
             return "ok"
         else:
             return "bad"
-    
-    def find_rmsz_threshold_bond(self, mol):
-        """
-        Get the RMSZ threshold for a molecule based on the number of bonds or angles.
-        
-        Parameters:
-            mol (object): The molecule object.
-            
-        Returns:
-            float: RMSZ threshold for the molecule.
-        """
-        if mol is None:
-            return 1
-        n = self.get_bond_count(mol)
-        return self.find_rmsz_threshold(n)
-    
-    def find_rmsz_threshold_angle(self, mol):
-        """
-        Get the RMSZ threshold for a molecule based on the number of bonds or angles.
-        
-        Parameters:
-            mol (object): The molecule object.
-            
-        Returns:
-            float: RMSZ threshold for the molecule.
-        """
-        if mol is None:
-            return 1
-        n = self.get_angle_count(mol)
-        return self.find_rmsz_threshold(n)
-    
-    def get_bond_count(self, mol):
-        """
-        Get the number of bonds between heavy atoms in the molecule.
-        
-        Parameters:
-            mol (object): The molecule object.
-            
-        Returns:
-            int: Number of bonds in the molecule.
-        """
-        bond_count = 0
-        bonds = mol.GetBonds()
-        for bond in bonds:
-            atom1 = bond.GetBeginAtom()
-            atom2 = bond.GetEndAtom()
-            if atom1.GetSymbol() != "H" and atom2.GetSymbol() != "H":
-                bond_count += 1
-
-        return bond_count
-    
-    def visualize_bond_count(self, mol, filepath):
-        """
-        Visualize the molecule and annotate the bonds.
-        """
-        # remove all hydrogens
-        mol = Chem.rdmolops.RemoveHs(mol)
-
-        # Generate 2D coordinates for the molecule
-        AllChem.Compute2DCoords(mol)
-
-        
-        # Draw the molecule with bond annotations
-        options = MolDrawOptions()
-        options.addBondIndices = True
-        drawer = MolDraw2DSVG(600, 600)
-        drawer.SetDrawOptions(options)
-        drawer.DrawMolecule(mol)
-        drawer.FinishDrawing()
-        svg = drawer.GetDrawingText()
-        
-        with open(filepath, "w") as f:
-            f.write(svg)
-
-    def get_angle_count(self, mol):
-        """
-        Get the number of angles in the molecule.
-        
-        Parameters:
-            mol (object): The molecule object.
-            
-        Returns:
-            int: Number of angles between atoms in the molecule.
-        """
-        # an angle is defined by 3 atoms
-        angle_thruples = []
-        atoms = mol.GetAtoms()
-
-        # iterate through all atoms and find the angles
-        for atom in atoms:
-            if atom.GetSymbol() == "H":
-                continue
-            atom_idx = atom.GetIdx()
-            
-            neighbors = atom.GetNeighbors()
-            for neighbor in neighbors:
-                if neighbor.GetSymbol() == "H":
-                    continue
-                neighbor_idx = neighbor.GetIdx()
-
-                second_neighbors = neighbor.GetNeighbors()
-                for second_neighbor in second_neighbors:
-                    if second_neighbor.GetSymbol() == "H":
-                        continue
-                    second_neighbor_idx = second_neighbor.GetIdx()
-                    if second_neighbor_idx == atom_idx:
-                        continue
-                    
-                    new_thruple = tuple(sorted([atom_idx, neighbor_idx, second_neighbor_idx]))
-                    if new_thruple not in angle_thruples:
-                        angle_thruples.append(new_thruple)
-        return len(angle_thruples)
-
-
-        
 
     def perform_f_test(self, rmsz, n, alpha=0.05):
         """
