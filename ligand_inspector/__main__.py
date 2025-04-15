@@ -76,7 +76,11 @@ version: {__version__}
               type=click.Path(exists=False),
               default="ligand_inspector.log",
                 help="Path to the log file. Default is ligand_inspector.log.")
-def single(pdb_id, ligand_id, output_file, ignore_other_entries, only_chain, logging_level, log_file):
+@click.option("--keep-sdf", "-ks",
+              is_flag=True,
+              default=False,
+              help="If set, the content of the SDF file will be kept in the output csv file in the column 'Ligand sdf'.")
+def single(pdb_id, ligand_id, output_file, ignore_other_entries, only_chain, logging_level, log_file, keep_sdf):
     """
     Inspect the quality of the ligand <LIGAND_ID> inside <PDB_ID>.pdb from the Protein Data Bank. The results will be saved to <OUTPUT_FILE>. Supported formats are .csv, .xlsx, .json, .yaml, .html, and .txt.
     """
@@ -89,7 +93,8 @@ def single(pdb_id, ligand_id, output_file, ignore_other_entries, only_chain, log
     logger.info(f"Evaluating the provided data...")
     df = li.evaluate(df)
     # drop the 'Ligand sdf' column
-    df = df.drop(columns=['Ligand sdf'], errors='ignore')
+    if not keep_sdf:
+        df = df.drop(columns=['Ligand sdf'], errors='ignore')
 
     # Save the results to the specified output file
     logger.info(f"Saving results to {output_file}...")
@@ -131,7 +136,11 @@ def single(pdb_id, ligand_id, output_file, ignore_other_entries, only_chain, log
               type=click.Path(exists=False),
               default="ligand_inspector.log",
                 help="Path to the log file. Default is ligand_inspector.log.")
-def batch(input_file, output_file, ignore_other_entries, workers, only_chain, logging_level, log_file):
+@click.option("--keep-sdf", "-ks",
+              is_flag=True,
+              default=False,
+              help="If set, the content of the SDF file will be kept in the output csv file in the column 'Ligand sdf'.")
+def batch(input_file, output_file, ignore_other_entries, workers, only_chain, logging_level, log_file, keep_sdf):
     """
     Inspect a batch of ligands as specified in <INPUT_FILE>. The input file should be a CSV file with columns 'PDB ID' and 'Ligand ID'. The results will be saved to <OUTPUT_FILE>. Supported formats are .csv, .xlsx, .json, .yaml, .html, and .txt.
     """
@@ -157,7 +166,8 @@ def batch(input_file, output_file, ignore_other_entries, workers, only_chain, lo
     results = li.evaluate(results)
 
     # drop the 'Ligand sdf' column
-    results = results.drop(columns=['Ligand sdf'], errors='ignore')
+    if not keep_sdf:
+        results = results.drop(columns=['Ligand sdf'], errors='ignore')
 
     # Save the results to the specified output file
     logger.info(f"Saving results to {output_file}...")
