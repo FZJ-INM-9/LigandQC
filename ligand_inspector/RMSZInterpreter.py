@@ -53,6 +53,7 @@ class RMSZInterpreter:
         self.reference_dataset_size = 1E7
         self.reference_dataset = np.random.normal(self.reference_mean, self.reference_std_dev, int(self.reference_dataset_size))
         self.ok_bad_threshold = 2.0
+        self.precomputed_rmsz_thresholds = {}
     
     def interpret_molecule(self, mol, rmsz, mode="bond"):
         """
@@ -152,12 +153,6 @@ class RMSZInterpreter:
         
         with open(filepath, "w") as f:
             f.write(svg)
-        # img.save(filepath)
-        # Display the image
-
-
-
-
 
     def get_angle_count(self, mol):
         """
@@ -248,11 +243,17 @@ class RMSZInterpreter:
         Returns:
             float: The rmsz threshold.
         """
+        rmsz_threshold = self.precomputed_rmsz_thresholds.get(n, None)
+        if rmsz_threshold is not None:
+            return rmsz_threshold
+        
+        # Initialize bisection method
         rmsz_start = 3.0
         rmsz_end = 1.01 
         if n >= 13526:
             raise ValueError("Sample size n is too large. Please use a smaller sample size.")
         
+        # Perform bisection method to find the rmsz threshold
         rmsz_values = []
         while rmsz_start - rmsz_end > 1E-6:
             mid_rmsz = (rmsz_start + rmsz_end) / 2
@@ -264,7 +265,10 @@ class RMSZInterpreter:
                 rmsz_start = mid_rmsz
             rmsz_values.append(mid_rmsz)
         
-        return round(mid_rmsz, 5)
+        # Save the result and return
+        rounded_value = round(mid_rmsz, 5)
+        self.precomputed_rmsz_thresholds[n] = rounded_value
+        return rounded_value
 
     def plot_rationale(self):
         """
