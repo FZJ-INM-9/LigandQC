@@ -25,6 +25,9 @@ from .LigandDownloader import LigandDownloader
 from rdkit import Chem
 from .Logger import logger
 from rdkit import RDLogger
+from rdkit import Chem
+from rdkit.Chem.Draw.rdMolDraw2D import MolDraw2DSVG, MolDrawOptions
+from rdkit.Chem import AllChem
 
 global CURRENT_ITEMS
 CURRENT_ITEMS = []
@@ -344,6 +347,88 @@ class LigandInspector:
 
             await asyncio.gather(*workers, return_exceptions=True)
 
+    def get_bond_count(self, mol):
+        """
+        Get the number of bonds between heavy atoms in the molecule.
+        
+        Parameters:
+            mol (object): The molecule object.
+            
+        Returns:
+            int: Number of bonds in the molecule.
+        """
+        bond_count = 0
+        bonds = mol.GetBonds()
+        for bond in bonds:
+            atom1 = bond.GetBeginAtom()
+            atom2 = bond.GetEndAtom()
+            if atom1.GetSymbol() != "H" and atom2.GetSymbol() != "H":
+                bond_count += 1
+
+        return bond_count
+    
+    def visualize_bond_count(self, mol, filepath):
+        """
+        Visualize the molecule and annotate the bonds.
+        """
+        # remove all hydrogens
+        mol = Chem.rdmolops.RemoveHs(mol)
+
+        # Generate 2D coordinates for the molecule
+        AllChem.Compute2DCoords(mol)
+
+        
+        # Draw the molecule with bond annotations
+        options = MolDrawOptions()
+        options.addBondIndices = True
+        drawer = MolDraw2DSVG(600, 600)
+        drawer.SetDrawOptions(options)
+        drawer.DrawMolecule(mol)
+        drawer.FinishDrawing()
+        svg = drawer.GetDrawingText()
+        
+        with open(filepath, "w") as f:
+            f.write(svg)
+
+    def get_angle_count(self, mol):
+        """
+        Get the number of angles in the molecule.
+        
+        Parameters:
+            mol (object): The molecule object.
+            
+        Returns:
+            int: Number of angles between atoms in the molecule.
+        """
+        # an angle is defined by 3 atoms
+        angle_thruples = []
+        atoms = mol.GetAtoms()
+
+        # iterate through all atoms and find the angles
+        for atom in atoms:
+            if atom.GetSymbol() == "H":
+                continue
+            atom_idx = atom.GetIdx()
+            
+            neighbors = atom.GetNeighbors()
+            for neighbor in neighbors:
+                if neighbor.GetSymbol() == "H":
+                    continue
+                neighbor_idx = neighbor.GetIdx()
+
+                second_neighbors = neighbor.GetNeighbors()
+                for second_neighbor in second_neighbors:
+                    if second_neighbor.GetSymbol() == "H":
+                        continue
+                    second_neighbor_idx = second_neighbor.GetIdx()
+                    if second_neighbor_idx == atom_idx:
+                        continue
+                    
+                    new_thruple = tuple(sorted([atom_idx, neighbor_idx, second_neighbor_idx]))
+                    if new_thruple not in angle_thruples:
+                        angle_thruples.append(new_thruple)
+        return len(angle_thruples)
+
     def evaluate(self, df, ignore_other_entries=False, only_chain=None):
         """
         evaluates the quality of the ligand using the inspection results based on the threshold values defined in the constructor.
@@ -372,6 +457,11 @@ class LigandInspector:
         df = df.drop(columns=["primary entry", "secondary entry"])
         df.loc[:,"Structural outliers"] = df.loc[:,["Outliers of bond length", "Outliers of bond angle"]].sum(axis=1)
 
+        df.loc[:, "Number of bonds"] = df.apply(lambda row: self.get_bond_count(self.load_mol_from_sdf_block(row["Ligand sdf"])), axis=1)
+
+        df.loc[:, "Number of angles"] = df.apply(lambda row: self.get_angle_count(self.load_mol_from_sdf_block(row["Ligand sdf"])), axis=1)
+
+        # evaluate the ligand
         df["Real space correlation coefficient evaluation"] = df.apply(self.evaluate_rscc, axis=1)
         df["Real space R factor evaluation"] = df.apply(self.evaluate_rsr_factor, axis=1)
         df["Structural outliers evaluation"] = df.apply(self.evaluate_structural_outliers, axis=1)
@@ -408,15 +498,13 @@ class LigandInspector:
         """
         evaluates the RMSZ-bond-length of the ligand
         """
-        mol = self.load_mol_from_sdf_block(row["Ligand sdf"])
-        return self.rmsz_interpreter.interpret_molecule(mol, row["RMSZ-bond-length"], mode="bond")
+        return self.rmsz_interpreter.interpret_rmsz(row["Number of bonds"], row["RMSZ-bond-length"])
     
     def evaluate_rmsz_bond_angle(self, row):
         """
         evaluates the RMSZ-bond-angle of the ligand
         """
-        mol = self.load_mol_from_sdf_block(row["Ligand sdf"])
-        return self.rmsz_interpreter.interpret_molecule(mol, row["RMSZ-bond-angle"], mode="angle")
+        return self.rmsz_interpreter.interpret_rmsz(row["Number of angles"], row["RMSZ-bond-angle"])
     
     def evaluate_rscc(self, row):
         """
@@ -509,46 +597,187 @@ class LigandInspector:
         
         """
 
-        fig, axs = plt.subplots(4, 3, figsize=(15, 15))
+        fig, axs = plt.subplots(3, 3, figsize=(14, 14))
         n_bins = len(df) // 10
         if n_bins < 1:
             n_bins = 1
 
-        df = self.evaluate(df)
-
-
         colors = {"good": "green", "ok": "yellow", "bad": "orangered"}
         order = {"good": 0, "ok": 1, "bad": 2}
 
-        sns.histplot(df, x="Real space R factor", bins=n_bins,  ax=axs[0,0], hue="Real space R factor evaluation", multiple="stack", palette=colors)
-        axs[0,0].set_xlim([0, 1])
+        self.plot_RSR_factor(axs[0,0], df, colors)
+        self.plot_RSCC(axs[0,1], df, colors)
+        self.plot_RMSZ_bond_length(axs[0,2], df, colors)
+        self.plot_RMSZ_bond_angle(axs[1,0], df, colors)
+        self.plot_structural_outliers(axs[1,1], df, colors)
+        self.plot_atomic_clashes(axs[1,2], df, colors, order)
+        self.plot_stereochemical_errors(axs[2,0], df, colors, order)
+        self.plot_average_occupancy(axs[2,1], df, colors, order)
+        self.plot_overall_evaluation(axs[2,2], df, colors, order)
+        
 
-        sns.histplot(df, x="Real space correlation coefficient", bins=n_bins,  ax=axs[0,1], hue="Real space correlation coefficient evaluation", multiple="stack", palette=colors)
-        axs[0,1].set_xlim([0, 1])
+        # # plot the histograms
+        # sns.histplot(df, x="Ranking for goodness of fit", bins=n_bins,  ax=axs[3,0])
+        # axs[3,0].set_xlim([0, 1])
 
-        # sns.scatterplot(data=df, x="Ranking for goodness of fit", y="Ranking for geometry", ax=axs[2,0], hue="Real space correlation coefficient evaluation")
-        # axs[2,0].set_xlim([0, 1])
-        # axs[2,0].set_ylim([0, 1])
+        # sns.histplot(df, x="Ranking for geometry", bins=n_bins,  ax=axs[3,1])
+        # axs[3,1].set_xlim([0, 1])
 
-        sns.histplot(df, x="RMSZ-bond-length", bins=n_bins,  ax=axs[0,2], multiple="stack")
+        # # plot the occurence of the ligand in the PDB as a pie chart
+        # pie_data = df.groupby("Ligand occurence in PDB").size()
+        # pie_data_df = pd.DataFrame(pie_data)
+        # pie_data_df = pie_data_df.rename(columns={0: "count"})
+        # pie_data_df.sort_index(inplace=True)
+        # axs[3,2].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, counterclock=False)
+        # axs[3,2].set_xlabel("Ligand occurence in PDB")
 
-        sns.histplot(df, x="RMSZ-bond-angle", bins=n_bins,  ax=axs[1,0],multiple="stack")
 
-        sns.histplot(df, x="Structural outliers", bins=n_bins,  ax=axs[1,1], hue="Structural outliers evaluation", multiple="stack", palette=colors)
+        plt.tight_layout()
+        plt.savefig(filename)
+    
+    def plot_RSR_factor(self, ax, df, colors):
+        """
+        creates a histogram of the RSR factor values.
+        
+        Args:
+            axs (matplotlib.axes._axes.Axes): The axes to plot on.
+            df (pd.DataFrame): A DataFrame containing the inspection results.
+        
+        Returns:
+            None
+        
+        """
+        sns.histplot(df, x="Real space R factor", binwidth=0.025,  ax=ax, hue="Real space R factor evaluation", multiple="stack", palette=colors, binrange=(0, 1))
+        ax.set_xlabel("Real space R factor")
+        ax.set_ylabel("Count")
+        ax.set_xlim([0, 1])
+        ax.vlines(self.rsr_factor_threshold_good, ymin=0, ymax=50, color='r', linestyle='--', label='RSR factor threshold')
+    
+    def plot_RSCC(self, ax, df, colors):
+        """
+        creates a histogram of the RSCC values.
+        
+        Args:
+            axs (matplotlib.axes._axes.Axes): The axes to plot on.
+            df (pd.DataFrame): A DataFrame containing the inspection results.
+        
+        Returns:
+            None
+        
+        """
+        sns.histplot(df, x="Real space correlation coefficient", binwidth=0.025,  ax=ax, hue="Real space correlation coefficient evaluation", multiple="stack", palette=colors, binrange=(0, 1))
+        ax.set_xlabel("Real space correlation coefficient")
+        ax.set_ylabel("Count")
+        ax.set_xlim([0, 1])
+        ax.vlines(self.rscc_threshold_good, ymin=0, ymax=50, color='r', linestyle='--', label='RSCC threshold')
+        ax.vlines(self.rscc_threshold_ok, ymin=0, ymax=50, color='orange', linestyle='--', label='RSCC threshold')
+    
+    def plot_RMSZ_bond_length(self, ax, df, colors):
+        """
+        creates a histogram of the RMSZ values.
+        
+        Args:
+            axs (matplotlib.axes._axes.Axes): The axes to plot on.
+            df (pd.DataFrame): A DataFrame containing the inspection results.
+        
+        Returns:
+            None
+        
+        """
+        sns.histplot(df, x="RMSZ-bond-length", 
+                     binwidth=0.2,
+                     binrange=(0, max(df["RMSZ-bond-length"])),
+                     ax=ax, 
+                     hue="RMSZ-bond-length evaluation",
+                     multiple="stack", 
+                     palette=colors)
+        ax.set_xlabel("RMSZ-bond-length")
+        ax.set_ylabel("Count")
+        ax.set_xlim(xmin=0)
 
-        # pie plot for atomic clashes
+    def plot_RMSZ_bond_angle(self, ax, df, colors):
+        """
+        creates a histogram of the RMSZ values.
+        
+        Args:
+            axs (matplotlib.axes._axes.Axes): The axes to plot on.
+            df (pd.DataFrame): A DataFrame containing the inspection results.
+        
+        Returns:
+            None
+        
+        """
+        sns.histplot(df, x="RMSZ-bond-angle", 
+                     binwidth=0.2,
+                     binrange=(0, max(df["RMSZ-bond-angle"])),
+                     ax=ax, 
+                     hue="RMSZ-bond-angle evaluation",
+                     multiple="stack", 
+                     palette=colors)
+        ax.set_xlabel("RMSZ-bond-angle")
+        ax.set_ylabel("Count")
+        ax.set_xlim(xmin=0)
+
+    def plot_structural_outliers(self, ax, df, colors):
+        """
+        creates a histogram of the structural outliers values.
+        
+        Args:
+            axs (matplotlib.axes._axes.Axes): The axes to plot on.
+            df (pd.DataFrame): A DataFrame containing the inspection results.
+        
+        Returns:
+            None
+        
+        """
+        sns.histplot(df, x="Structural outliers", 
+                     binwidth=2.5,
+                     binrange=(0, max(df["Structural outliers"])),
+                     ax=ax, 
+                     hue="Structural outliers evaluation",
+                     multiple="stack", 
+                     palette=colors)
+        ax.set_xlabel("Structural outliers")
+        ax.set_ylabel("Count")
+        ax.set_xlim(xmin=0)
+    
+    def plot_atomic_clashes(self, ax, df, colors, order):
+        """
+        creates a pie plot for atomic clashes
+        
+        Args:
+            axs (matplotlib.axes._axes.Axes): The axes to plot on.
+            df (pd.DataFrame): A DataFrame containing the inspection results.
+        
+        Returns:
+            None
+        
+        """
         pie_data = df.groupby("Atomic clashes evaluation").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
         pie_data_df.loc[:, "color"] = pie_data_df.index.map(lambda x: colors[x.split(" ")[0]])
         pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
-        labels_map = {"good": "good (0)", "ok": "ok (1-2)", "bad": "bad (>2)"}
+        labels_map = {"good": "good (0)", 
+                      "ok": "ok (1-2)", 
+                      "bad": "bad (>2)"}
         pie_data_df = pie_data_df.rename(index=labels_map)
 
-        axs[1,2].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
-        axs[1,2].set_xlabel("Atomic clashes")
+        ax.pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
+        ax.set_xlabel("Atomic clashes")
 
-        # pie plot for the steriochemical errors
+    def plot_stereochemical_errors(self, ax, df, colors, order):
+        """
+        creates a pie plot for stereochemical errors
+        
+        Args:
+            axs (matplotlib.axes._axes.Axes): The axes to plot on.
+            df (pd.DataFrame): A DataFrame containing the inspection results.
+        
+        Returns:
+            None
+        
+        """
         pie_data = df.groupby("Stereochemical errors evaluation").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
@@ -557,8 +786,21 @@ class LigandInspector:
         labels_map = {"good": "good (0)", "bad": "bad (>0)"}
         pie_data_df = pie_data_df.rename(index=labels_map)
 
-        axs[2,0].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
-        axs[2,0].set_xlabel("Stereochemical errors")
+        ax.pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
+        ax.set_xlabel("Stereochemical errors")
+
+    def plot_average_occupancy(self, ax, df, colors, order):
+        """
+        creates a pie plot for average occupancy
+        
+        Args:
+            axs (matplotlib.axes._axes.Axes): The axes to plot on.
+            df (pd.DataFrame): A DataFrame containing the inspection results.
+        
+        Returns:
+            None
+        
+        """
 
         # pie plot for the average occupancy
         pie_data = df.groupby("Average occupancy evaluation").size()
@@ -570,36 +812,26 @@ class LigandInspector:
         labels_map = {"good": "good (>0.95)", "ok": "ok (0.5-0.95)", "bad": "bad (<0.5)"}
         pie_data_df = pie_data_df.rename(index=labels_map)
 
-        axs[2,1].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
-        axs[2,1].set_xlabel("Average occupancy evaluation")
-        # sns.histplot(df, x="Average occupancy", bins=n_bins,  ax=axs[2,1], hue="Real space correlation coefficient evaluation", multiple="stack")
+        ax.pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
+        ax.set_xlabel("Average occupancy evaluation")
 
-        # pie plot for the overall evaluation
+    def plot_overall_evaluation(self, ax, df, colors, order):
+        """
+        creates a pie plot for overall evaluation
+        
+        Args:
+            axs (matplotlib.axes._axes.Axes): The axes to plot on.
+            df (pd.DataFrame): A DataFrame containing the inspection results.
+        
+        Returns:
+            None
+        
+        """
         pie_data = df.groupby("overall evaluation").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
         pie_data_df.loc[:, "color"] = pie_data_df.index.map(lambda x: colors[x.split(" ")[0]])
         pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
 
-        axs[2,2].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
-        axs[2,2].set_xlabel("Overall evaluation")
-        
-
-        # plot the histograms
-        sns.histplot(df, x="Ranking for goodness of fit", bins=n_bins,  ax=axs[3,0])
-        axs[3,0].set_xlim([0, 1])
-
-        sns.histplot(df, x="Ranking for geometry", bins=n_bins,  ax=axs[3,1])
-        axs[3,1].set_xlim([0, 1])
-
-        # plot the occurence of the ligand in the PDB as a pie chart
-        pie_data = df.groupby("Ligand occurence in PDB").size()
-        pie_data_df = pd.DataFrame(pie_data)
-        pie_data_df = pie_data_df.rename(columns={0: "count"})
-        pie_data_df.sort_index(inplace=True)
-        axs[3,2].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, counterclock=False)
-        axs[3,2].set_xlabel("Ligand occurence in PDB")
-
-
-        plt.tight_layout()
-        plt.savefig(filename)
+        ax.pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
+        ax.set_xlabel("Overall evaluation")
