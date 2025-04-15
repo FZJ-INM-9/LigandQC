@@ -50,7 +50,7 @@ class RMSZInterpreter:
         self.reference_dataset_size = 1E7
         self.reference_dataset = np.random.normal(self.reference_mean, self.reference_std_dev, int(self.reference_dataset_size))
         self.ok_bad_threshold = 2.0
-        self.precomputed_rmsz_thresholds = {}
+        self.precomputed_rmsz_thresholds = {None: 1.0}
     
     def interpret_rmsz(self, n, rmsz):
         """

@@ -357,6 +357,9 @@ class LigandInspector:
         Returns:
             int: Number of bonds in the molecule.
         """
+        if mol is None:
+            return None
+        
         bond_count = 0
         bonds = mol.GetBonds()
         for bond in bonds:
@@ -400,6 +403,9 @@ class LigandInspector:
         Returns:
             int: Number of angles between atoms in the molecule.
         """
+        if mol is None:
+            return None
+
         # an angle is defined by 3 atoms
         angle_thruples = []
         atoms = mol.GetAtoms()
