@@ -178,9 +178,9 @@ class RMSZInterpreter:
 
         # fill above
 
-        plt.ylim(0, 4)
+        plt.ylim(0, 2.99)
         plt.xlim(0, 200)
-        plt.title("Rationale for Flagging Ligands as 'Good'")
+        plt.title("Rationale for flagging Ligands as 'Good', 'Ok', or 'Bad'")
         plt.xlabel("Sample Size (n)")
         plt.ylabel("RMSZ Threshold")
         plt.legend()
@@ -203,6 +203,7 @@ class RMSZInterpreter:
         """
 
         fig, axs = plt.subplots(2, 1 , figsize=(7, 6))
+        fig.suptitle("Comparison of two Normal Distributions with RMSZ 1.0 and 2.0")
         mean = 0
         reference_std_dev = 1.0
         dataset_std_dev = 2.0
