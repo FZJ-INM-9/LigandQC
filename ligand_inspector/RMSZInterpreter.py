@@ -19,6 +19,11 @@ import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind
 import seaborn as sns
 from .LigandDownloader import LigandDownloader
+from scipy.stats import gaussian_kde
+
+def gaussian(x, mean, std_dev):
+    """Calculate the Gaussian function."""
+    return (1 / (std_dev * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mean) / std_dev) ** 2)
 
 
 def generate_dataset(mean, std_dev, size=1000):
@@ -147,15 +152,21 @@ class RMSZInterpreter:
         self.precomputed_rmsz_thresholds[n] = rounded_value
         return rounded_value
 
-    def plot_rationale(self):
+    def plot_rationale_categorization(self, output_path=None):
         """
         Plot the rationale for flagging ligands as "good" based on the topology and RMSZ value.
+
+        Args:
+            output_path (str): Path to save the plot. If None, the plot will be shown.
+        
+        Returns:
+            None
         """
         n_values = range(2, 201)
         
         rmsz_values = [self.find_rmsz_threshold(n) for n in n_values]
 
-        plt.figure(figsize=(12, 6))
+        plt.figure(figsize=(7, 6))
         plt.plot(n_values, rmsz_values, label="RMSZ Threshold", color='blue')
 
         plt.axhline(y=2.0, color='red', linestyle='--', label="RMSZ = 2.0")
@@ -174,43 +185,71 @@ class RMSZInterpreter:
         plt.ylabel("RMSZ Threshold")
         plt.legend()
         plt.grid()
-        plt.show()
-    
-    def plot_explanation(self):
-        mean = 0
-        std_devs = [0.5, 2.0, 3.0]
-        size = 1_000_000
-        reference_std_dev = 1.0
-        reference_dataset = generate_dataset(mean, reference_std_dev, size)
-        reference_rmsz = calculate_rmsz(reference_dataset, reference_std_dev, mean)
-        print(f"Reference RMSZ: {reference_rmsz:.4f}")
+        plt.tight_layout()
+        if output_path:
+            plt.savefig(output_path)
+        else:
+            plt.show()
 
-        rmsz_values = []
-        datasets = []
-        for std_dev in std_devs:
-            dataset = generate_dataset(mean, std_dev, size)
-            rmsz = calculate_rmsz(dataset, reference_std_dev, mean)
-            rmsz_values.append(rmsz)
-            datasets.append(dataset)
-            percentage = calculate_percentage(dataset, reference_std_dev, mean)
-            print(f"Dataset with std_dev {std_dev} RMSZ: {rmsz:.4f}")
-            print(f"Percentage within 2 std_dev: {percentage:.2f}%")
-            # Perform t-test
-            t_stat, p_value = ttest_ind(reference_dataset, dataset)
+    def plot_rationale_ok_threshold(self, output_path=None):
+        """
+        Plot the rationale for flagging ligands as "ok" based on the topology and RMSZ value.
 
+        Args:
+            output_path (str): Path to save the plot. If None, the plot will be shown.
         
-        # Plotting
-        plt.figure(figsize=(12, 6))
-        sns.set(style="whitegrid")
-        sns.kdeplot(reference_dataset, label="Reference Dataset", fill=True, alpha=0.5)
-        for i, dataset in enumerate(datasets):
-            sns.kdeplot(dataset, label=f"mean 0; std {std_devs[i]}", fill=True, alpha=0.5)
-        plt.vlines([3.0, -3.0], 0, 1, linestyles="dashed", colors="black")
-        plt.xlim([-10, 10])
-        plt.ylim([0,0.8])
-        plt.title("Density Plot of Datasets")
-        plt.xlabel("Value")
-        plt.ylabel("Density")
-        plt.legend()
-        plt.show()
-        assert False
+        Returns:
+            None
+        """
+
+        fig, axs = plt.subplots(2, 1 , figsize=(7, 6))
+        mean = 0
+        reference_std_dev = 1.0
+        dataset_std_dev = 2.0
+        x = np.linspace(-7, 7, 1_000_000)
+        gaussian1 = gaussian(x, mean, reference_std_dev)
+        gaussian2 = gaussian(x, mean, dataset_std_dev)
+
+        inters_x = np.minimum(gaussian1, gaussian2)
+
+        axs[0].plot(x, gaussian1, color='b', label='RMSZ 1.0')
+        axs[0].fill_between(x, gaussian1, 0, color='b', alpha=0.2)
+        axs[0].plot(x, gaussian2, color='orange', label='RMSZ 2.0')
+        axs[0].fill_between(x, gaussian2, 0, color='orange', alpha=0.2)
+        axs[0].plot(x, inters_x, color='r')
+        axs[0].fill_between(x, inters_x, 0, facecolor='none', edgecolor='r', hatch='xx', label='intersection')
+        axs[0].set_xlim(-7, 7)
+        axs[0].set_ylim([0,0.5])
+
+        area_inters_x = np.trapezoid(inters_x, x)
+
+        handles, labels = axs[0].get_legend_handles_labels()
+        labels[2] += f': {area_inters_x * 100:.1f} %'
+        axs[0].legend(handles, labels)    
+
+        x2 = np.array([xi for xi in x if abs(xi) <= 2.0])
+        gaussian1_x2 = gaussian(x2, mean, reference_std_dev)
+        gaussian2_x2 = gaussian(x2, mean, dataset_std_dev)
+
+        axs[1].plot(x, gaussian1, color='b', label='RMSZ 1.0')
+        axs[1].fill_between(x2, gaussian1_x2, 0, color='b', alpha=0.2, label='RMSZ 1.0')
+        axs[1].plot(x, gaussian2, color='orange', label='RMSZ 2.0')
+        axs[1].fill_between(x2, gaussian2_x2, 0, color='orange', alpha=0.2, label='RMSZ 2.0')
+        axs[1].vlines([2.0, -2.0], 0, 0.5, linestyles="dashed", colors="black")
+        axs[1].set_xlim(-7, 7)
+        axs[1].set_ylim([0,0.5])
+
+        area_inters_1 = np.trapezoid(gaussian1_x2, x2)
+        area_inters_2 = np.trapezoid(gaussian2_x2, x2)
+
+        handles, labels = axs[1].get_legend_handles_labels()
+        labels[1] += f': {area_inters_1 * 100:.1f} %'
+        labels[3] += f': {area_inters_2 * 100:.1f} %'
+        axs[1].legend(handles, labels)
+        # axs[1].title('RMSZ Distribution Comparison')
+        plt.tight_layout()
+
+        if output_path:
+            plt.savefig(output_path)
+        else:
+            plt.show()
