@@ -107,8 +107,8 @@ Using a bisectional search, the treshold-RMSZ value is determined, below which n
 The size of the true population was chosen to be 1E7, which is large enough to be considered infinite compared to the number of bonds/angles typically found in a ligand which we assume to be in the range of 5-200.
 
 <p align="middle">
-    <img src="/docs/rmsz_categorization.png" width="500">
-    <img src="/docs/rmsz_ok_threshold.png" width="500">
+    <img src="/docs/rmsz_categorization.png" width="450">
+    <img src="/docs/rmsz_ok_threshold.png" width="450">
 </p>
 
 # :alembic: Example
