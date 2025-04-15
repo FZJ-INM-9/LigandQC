@@ -190,5 +190,18 @@ def batch(input_file, output_file, ignore_other_entries, workers, only_chain, lo
         click.echo("Unsupported file format. Please use .csv, .xlsx, .json, .yaml, .yml, .html or .txt.")
         return
 
+@main.command()
+@click.argument('input_file')
+@click.argument('output_file')
+def plot(input_file, output_file):
+    """
+    Plot the results from <INPUT_FILE> and save to <OUTPUT_FILE>.
+    """
+    logger.info(f"Plotting results from {input_file}...")
+    df = pd.read_csv(input_file)
+    li = LigandInspector()
+    li.plot(df, output_file)
+    logger.info(f"Plot saved to {output_file}")
+
 if __name__ == "__main__":
     main()

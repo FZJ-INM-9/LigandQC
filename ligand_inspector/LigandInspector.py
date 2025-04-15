@@ -299,7 +299,6 @@ class LigandInspector:
         table = Table.grid()
         for i in CURRENT_ITEMS:
             table.add_row(Spinner("dots", text=f"Processing {i} ..."))
-        # print(f"Current items: {CURRENT_ITEMS}")
         table.add_row(PROGRESS)
         live.update(Panel(table))
         
@@ -813,7 +812,6 @@ class LigandInspector:
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
         pie_data_df.loc[:, "color"] = pie_data_df.index.map(lambda x: colors[x.split(" ")[0]])
-        print(pie_data_df)
         pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
         labels_map = {"good": "good (>0.95)", "ok": "ok (0.5-0.95)", "bad": "bad (<0.5)"}
         pie_data_df = pie_data_df.rename(index=labels_map)
