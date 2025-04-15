@@ -106,6 +106,10 @@ A treshold-RMSZ value is determined, below which no statistical deviation can be
 Using a bisectional search, the treshold-RMSZ value is determined, below which no statistical deviation can be proven.
 The size of the true population was chosen to be 1E7, which is large enough to be considered infinite compared to the number of bonds/angles typically found in a ligand which we assume to be in the range of 5-200.
 
+<p align="middle">
+    <img src="/docs/rmsz_categorization.png" width="400">
+    <img src="/docs/rmsz_ok_threshold.png" width="400">
+</p>
 
 # :alembic: Example
 ```bash
