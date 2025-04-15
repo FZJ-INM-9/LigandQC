@@ -16,19 +16,13 @@ def test_rmsz_threshold_finding():
     # Check if the threshold is within expected bounds
     assert rmsz_threshold == 1.48799
 
-def test_rational_plot():
+def test_rationale_plots():
     """
     Test the rational_plot method of the RMSZInterpreter class.
     """
     interpreter = RMSZInterpreter()
-    interpreter.plot_rationale()
-
-def test_explanation_plot():
-    interpreter = RMSZInterpreter()
-    interpreter.plot_explanation()
-
-
-
+    interpreter.plot_rationale_categorization("tests/output_files/rmsz_categorization.png")
+    interpreter.plot_rationale_ok_threshold("tests/output_files/rmsz_ok_threshold.png")
 
 @pytest.mark.parametrize("rmsz_value, n, expected_interpretation", [
     (0.2, 13,"good"),
