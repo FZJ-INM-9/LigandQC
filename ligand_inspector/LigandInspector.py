@@ -10,13 +10,14 @@ import os
 import aiohttp
 import pandas as pd
 import asyncio
-import requests
+from itertools import batched
 from bs4 import BeautifulSoup
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, MofNCompleteColumn, TimeRemainingColumn, track
 from rich.live import Live
 from rich.spinner import Spinner
 from rich.panel import Panel
 from rich.table import Table
+from rich.console import Group
 from contextlib import suppress
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -292,8 +293,8 @@ class LigandInspector:
             # wrapping up
             self.df = pd.concat([self.df, df], ignore_index=True)
 
-            if state == "success":
-                logger.info(f"{item_id} webscraping successful {u'\N{check mark}'}")
+            # if state == "success":
+            #     logger.info(f"{item_id} webscraping successful {u'\N{check mark}'}")
                 
             q.task_done()
             CURRENT_ITEMS.remove(item_id)
@@ -307,11 +308,20 @@ class LigandInspector:
         Args:
             live (rich.live.Live): The rich live object for displaying progress.
         """
-        table = Table.grid()
-        for i in CURRENT_ITEMS:
-            table.add_row(Spinner("dots", text=f"Processing {i} ..."))
-        table.add_row(PROGRESS)
-        live.update(Panel(table))
+        grid = Table.grid()
+        n_columns = 5
+        for i in range(n_columns):
+            grid.add_column()
+
+        for b in batched(CURRENT_ITEMS, n_columns):
+            spinners = [Spinner("dots", text=f"Processing {i}...     ") for i in b]
+            grid.add_row(*spinners)
+
+        group = Group(
+            Panel(grid, expand=False),
+            PROGRESS
+        )
+        live.update(group)
         
     async def inspect_batch_async(self, df, n_workers=10):
         """
