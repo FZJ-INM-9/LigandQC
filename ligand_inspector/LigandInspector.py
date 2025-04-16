@@ -259,6 +259,11 @@ class LigandInspector:
                     content = None
                     logger.error(f"Failed to download the ligand metrics from RCSB for {item_id}. Status code: {response.status}. Please check if the system is available under the following link: {row['url']}")
                     state = "failed"
+                    q.task_done()
+                    CURRENT_ITEMS.remove(item_id)
+                    self.update_live(live)
+                    PROGRESS.update(task, advance=1)
+                    continue
                              
 
             soup = BeautifulSoup(content, 'html.parser')
@@ -269,21 +274,27 @@ class LigandInspector:
             except AssertionError:
                 logger.error(f"Failed to obtain the table with ligand metrics from RCSB for {item_id}. Please check if the ligand validation report is available for this PDB ID and ligand ID.")
                 state = "failed"
+                q.task_done()
+                CURRENT_ITEMS.remove(item_id)
+                self.update_live(live)
+                PROGRESS.update(task, advance=1)
+                continue
 
             # download the ligand sdf file
             try:
                 ligand_sdf = await self.ligand_downloader.download_ligand_async(row["Ligand ID"], session)
+                df.loc[:, "Ligand sdf"] = ligand_sdf
             except ValueError:
                 state = "failed"
                 ligand_sdf = None
-            df.loc[:, "Ligand sdf"] = ligand_sdf
-            
 
+            
             # wrapping up
             self.df = pd.concat([self.df, df], ignore_index=True)
+
             if state == "success":
                 logger.info(f"{item_id} webscraping successful {u'\N{check mark}'}")
-
+                
             q.task_done()
             CURRENT_ITEMS.remove(item_id)
             self.update_live(live)
