@@ -1,6 +1,6 @@
 [project]
 name = "ligand_inspector"
-version = "0.1.0"
+version = "0.2.0"
 description = "A webscraper for ligands from the Protein Data Bank."
 authors = [
     {name = "c.bergeest",email = "c.bergeest@fz-juelich.de"}
