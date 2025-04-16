@@ -29,6 +29,7 @@ from rdkit import RDLogger
 from rdkit import Chem
 from rdkit.Chem.Draw.rdMolDraw2D import MolDraw2DSVG, MolDrawOptions
 from rdkit.Chem import AllChem
+from .RCSBInterface import RCSBInterface
 
 global CURRENT_ITEMS
 CURRENT_ITEMS = []
@@ -90,44 +91,38 @@ class LigandInspector:
         """
         return f"https://www.rcsb.org/ligand-validation/{pdb_id}/{ligand_id}"
     
-    def inspect_single(self, pdb_id, ligand_id, ignore_other_entries=False, only_chain=None):
+    def inspect_single(self, ligand_id, pdb_ids, only_chain=None):
         """
         Inspects a single pdb-ligand pair.
 
         Args:
-            pdb_id (str): The PDB ID of the protein.
             ligand_id (str): The ligand ID.
-            ignore_other_entries (bool): If True, only the entries in the input file will be kept in the output file.
+            pdb_id (list[str]): The PDB ID of the protein.
             only_chain (str): If set, only the specified chain will be reported.
 
         Returns:
             pd.DataFrame: A DataFrame containing the inspection results.
 
         """
-        df = pd.DataFrame([{"PDB ID": pdb_id, "Ligand ID": ligand_id}])
-        df = self.inspect_batch(df, n_workers=1, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
+        df = self.inspect_batch([ligand_id], pdb_ids, only_chain=only_chain)
         return df
     
-    def filter_df(self, df, ignore_other_entries=False, only_chain=None):
+    def filter_df(self, df, only_chain=None):
         """
         filters the DataFrame as specified by the input parameters.
 
         Args:
             df (pd.DataFrame): The DataFrame to be filtered.
-            ignore_other_entries (bool): If True, only the entries in the input file will be kept in the output file.
             only_chain (str): If set, only the specified chain will be reported.
 
         Returns:
             pd.DataFrame: The filtered DataFrame.
         
         """
-        if ignore_other_entries:
-            # remove entries that are not in the input file
-            df = df.loc[df.apply(lambda row: row["Identifier"].startswith(row["PDB ID"] + "_" + row["Ligand ID"]), axis=1)]
         
         if only_chain is not None:
             # remove entries that do not match the chain
-            df = df.loc[df.apply(lambda row: row["Identifier"].startswith(row["PDB ID"] + "_" + row["Ligand ID"] + "_" + only_chain), axis=1)]
+            df = df[df["Chain ID"]== only_chain]
 
         return df
 
@@ -206,25 +201,27 @@ class LigandInspector:
         df = df.reset_index(drop=True)
         return df
     
-    def inspect_batch(self, df, n_workers=10, ignore_other_entries=False, only_chain=None):
+    def inspect_batch(self, ligand_ids, pdb_ids, only_chain=None):
         """
         wrapper function for async inspection of a batch of pdb-ligand pairs.
 
         Args:
-            df (pd.DataFrame): A DataFrame containing the columns "PDB ID" and "Ligand ID".
+            ligand_ids (list[str]): A list of ligand IDs.
+            pdb_ids (list[str]): A list of PDB IDs.
             n_workers (int): The number of worker tasks to create.
-            ignore_other_entries (bool): If True, only the entries in the input file will be kept in the output file.
             only_chain (str): If set, only the specified chain will be reported.
         
         Returns:
             pd.DataFrame: A DataFrame containing the inspection results for each pdb-ligand pair.
         
         """
+        interface = RCSBInterface()
+        ligand_ids = list(set(ligand_ids))
+        pdb_ids = list(set(pdb_ids)) if pdb_ids else None
 
-        asyncio.run(self.inspect_batch_async(df, n_workers=n_workers))
-        self.df = self.format_df(self.df)
+        self.df = interface.get_ligand_quality_data(ligand_ids, pdb_ids=pdb_ids)
         
-        self.df = self.filter_df(self.df, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
+        self.df = self.filter_df(self.df, only_chain=only_chain)
 
         return self.df
 
@@ -467,25 +464,6 @@ class LigandInspector:
         Returns:
             pd.DataFrame: A DataFrame containing the evaluation results.
         """
-
-        # check Ligand occurence in PDB
-        df.loc[:,"primary entry"] = df.apply(lambda row: row["Identifier"].startswith(row["PDB ID"]), axis=1)
-        df["secondary entry"] = df.apply(lambda row: not row["primary entry"], axis=1)
-
-        df.loc[:, "Ligand occurence in PDB"] = df.apply(lambda row: df.groupby("PDB ID").get_group(row["PDB ID"])["secondary entry"].sum() +1, axis=1)
-        if ignore_other_entries:
-            df = df[df["primary entry"]]
-
-        df.loc[:, "Chain ID"] = df.apply(lambda row: row["Identifier"].split("_")[2], axis=1)
-        if only_chain is not None:
-            df = df[df["Chain ID"] == only_chain]
-
-        df = df.drop(columns=["primary entry", "secondary entry"])
-        df.loc[:,"Structural outliers"] = df.loc[:,["Outliers of bond length", "Outliers of bond angle"]].sum(axis=1)
-
-        df.loc[:, "Number of bonds"] = df.apply(lambda row: self.get_bond_count(self.load_mol_from_sdf_block(row["Ligand sdf"])), axis=1)
-
-        df.loc[:, "Number of angles"] = df.apply(lambda row: self.get_angle_count(self.load_mol_from_sdf_block(row["Ligand sdf"])), axis=1)
 
         # evaluate the ligand
         df["Real space correlation coefficient evaluation"] = df.apply(self.evaluate_rscc, axis=1)

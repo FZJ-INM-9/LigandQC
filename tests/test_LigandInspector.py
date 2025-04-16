@@ -6,7 +6,7 @@ def test_ligand_inspector_normal():
     pdb_id = "5REJ"
     ligand_id = "T1V"
     li = LigandInspector()
-    df = li.inspect_single(pdb_id, ligand_id)
+    df = li.inspect_batch([ligand_id], pdb_ids=[pdb_id], )
     df = li.evaluate(df)
     print(df.columns)
     assert df is not None
@@ -14,9 +14,8 @@ def test_ligand_inspector_normal():
     assert not df.empty
     assert df.loc[0]["PDB ID"] == pdb_id
     assert df.loc[0]["Ligand ID"] == ligand_id
-    assert df.loc[0]["Identifier"] == "5REJ_T1V_A_404"
-    assert df.loc[0]["Ranking for goodness of fit"] == 0.15
-    assert df.loc[0]["Ranking for geometry"] == 0.76
+    assert df.loc[0]["Ranking for goodness of fit"] == 0.1462
+    assert df.loc[0]["Ranking for geometry"] == 0.7649
     assert df.loc[0]["Real space R factor"] == 0.199
     assert df.loc[0]["Real space correlation coefficient"] == 0.755
     assert df.loc[0]["RMSZ-bond-length"] == 0.4
@@ -27,8 +26,8 @@ def test_ligand_inspector_normal():
     assert df.loc[0]["Stereochemical errors"] == 0
     assert df.loc[0]["Model completeness"] == 1
     assert df.loc[0]["Average occupancy"] == 0.64
-    assert df.loc[0]["Number of bonds"] == 18
-    assert df.loc[0]["Number of angles"] == 26
+    assert df.loc[0]["Number of bonds"] == 17
+    assert df.loc[0]["Number of angles"] == 21
     assert df.loc[0]["Real space correlation coefficient evaluation"] == "bad"
     assert df.loc[0]["RMSZ-bond-length evaluation"] == "good"
     assert df.loc[0]["RMSZ-bond-angle evaluation"] == "good"
@@ -57,18 +56,17 @@ def test_ligand_inspector_normal():
 #     li.inspect_single(pdb_id, ligand_id)
     
 def test_ligand_inspector_batch_inspection():
-    df = pd.DataFrame({'PDB ID': ["5REJ", "5REJ", "5REJ"],
-                       'Ligand ID': ["T1V", "T1V", "T1V"]}
-                       )
+    pdb_ids = ["5REJ", "7TLL", "5REK"]
+    ligand_ids =  ["T1V", "4WI", "T1Y"]
     li = LigandInspector()
-    results = li.inspect_batch(df)
+    results = li.inspect_batch(ligand_ids, pdb_ids=pdb_ids)
     assert results is not None
     assert isinstance(results, pd.DataFrame)
     assert not results.empty
-    assert len(results) == 3
+    assert len(results) == 4
 
 def test_plot():
-    file = "tests/input_files/output_table_chain_A.csv"
+    file = "tests/input_files/output_table_without_sdf.csv"
     df = pd.read_csv(file)
     li = LigandInspector()
     li.plot(df, "tests/output_files/plot.png")

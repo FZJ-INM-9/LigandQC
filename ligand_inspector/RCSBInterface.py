@@ -57,12 +57,10 @@ class RCSBInterface:
             pd.DataFrame: A DataFrame containing the ligand quality data.
         
         """
-
         if pdb_ids is None:
             logger.info("Fetching all PDB IDs for the given ligand IDs.")
             pdb_ids = []
-            for ligand_id in ligand_ids:
-                pdb_ids.extend(self.get_all_pdbids(ligand_id))
+            pdb_ids.extend(self.get_all_pdbids(ligand_ids))
         
         logger.info(f"Fetching ligand quality data for ligand IDs: {ligand_ids} and PDB IDs: {pdb_ids}")
         data = []
@@ -112,5 +110,6 @@ class RCSBInterface:
         df = pd.DataFrame(processed_data)
         df = df.drop_duplicates()
         df = df[df["Ligand ID"].isin(ligand_ids)]
+        df = df[df["PDB ID"].isin(pdb_ids)]
         df = df.reset_index(drop=True)
         return df

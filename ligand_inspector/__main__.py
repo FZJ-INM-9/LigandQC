@@ -54,77 +54,64 @@ version: {__version__}
 
 """)
 
-@main.command()
-@click.argument('pdb_id',
-                type=click.STRING)
-@click.argument('ligand_id')
-@click.argument('output_file',
-                type=click.Path(exists=False),
-                required=True)
-@click.option('--ignore-other-entries', "-ign",
-              is_flag=True,
-              default=False,
-              help="If set, entries in the scraped table that are not in the input file will be removed from the reported file.")
-@click.option("--only-chain", "-oc",
-                type=click.STRING,
-                help="If set, only the specified chain will be inspected.")
-@click.option('--logging-level', '-ll',
-              type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], case_sensitive=False),
-              default='ERROR',
-              help="Set the logging level; Choices are DEBUG, INFO, WARNING, ERROR, CRITICAL. Default is INFO.")
-@click.option("--log-file", "-lf",
-              type=click.Path(exists=False),
-              default="ligand_inspector.log",
-                help="Path to the log file. Default is ligand_inspector.log.")
-@click.option("--keep-sdf", "-ks",
-              is_flag=True,
-              default=False,
-              help="If set, the content of the SDF file will be kept in the output csv file in the column 'Ligand sdf'.")
-def single(pdb_id, ligand_id, output_file, ignore_other_entries, only_chain, logging_level, log_file, keep_sdf):
-    """
-    Inspect the quality of the ligand <LIGAND_ID> inside <PDB_ID>.pdb from the Protein Data Bank. The results will be saved to <OUTPUT_FILE>. Supported formats are .csv, .xlsx, .json, .yaml, .html, and .txt.
-    """
-    setup_logger(log_file, logging_level)
+# @main.command()
+# @click.argument('ligand_id')
+# @click.argument('output_file',
+#                 type=click.Path(exists=False),
+#                 required=True)
+# @click.option('--pdb-id', '-pdb',
+#                 type=click.STRING,
+#                 multiple=True,
+#                 help="If set, the specified PDB ID will be used. Otherwise, the ligand ID will be used to search for all PDB IDs. Can be used multiple times to specify multiple PDB IDs.")
+# @click.option("--only-chain", "-oc",
+#                 type=click.STRING,
+#                 help="If set, only the specified chain will be inspected.")
+# @click.option('--logging-level', '-ll',
+#               type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], case_sensitive=False),
+#               default='ERROR',
+#               help="Set the logging level; Choices are DEBUG, INFO, WARNING, ERROR, CRITICAL. Default is INFO.")
+# @click.option("--log-file", "-lf",
+#               type=click.Path(exists=False),
+#               default="ligand_inspector.log",
+#                 help="Path to the log file. Default is ligand_inspector.log.")
+# def single(pdb_id, ligand_id, output_file, only_chain, logging_level, log_file):
+#     """
+#     Inspect the quality of the ligand <LIGAND_ID> inside <PDB_ID>.pdb from the Protein Data Bank. The results will be saved to <OUTPUT_FILE>. Supported formats are .csv, .xlsx, .json, .yaml, .html, and .txt.
+#     """
+#     setup_logger(log_file, logging_level)
 
-    logger.info(f"Inspecting {pdb_id} {ligand_id}")
-    li = LigandInspector()
-    logger.info(f"Downloading information from PDB...")
-    df = li.inspect_single(pdb_id, ligand_id, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
-    logger.info(f"Evaluating the provided data...")
-    df = li.evaluate(df)
-    # drop the 'Ligand sdf' column
-    if not keep_sdf:
-        df = df.drop(columns=['Ligand sdf'], errors='ignore')
+#     logger.info(f"Inspecting {pdb_id} {ligand_id}")
+#     li = LigandInspector()
+#     logger.info(f"Downloading information from PDB...")
+#     df = li.inspect_single(pdb_id, ligand_id, only_chain=only_chain)
+#     logger.info(f"Evaluating the provided data...")
+#     df = li.evaluate(df)
 
-    # Save the results to the specified output file
-    logger.info(f"Saving results to {output_file}...")
-    if output_file.endswith(".yaml") or output_file.endswith(".yml"):
-        with open(output_file, 'w') as f:
-            yaml.dump(df.iloc[0].to_dict(), f)
-    elif output_file.endswith(".json"):
-        df.to_json(output_file, orient='records', lines=True)
-    elif output_file.endswith(".xlsx"):
-        df.to_excel(output_file, index=False)
-    elif output_file.endswith(".html"):
-        df.to_html(output_file, index=False)
-    elif output_file.endswith(".txt"):
-        df.to_csv(output_file, sep='\t', index=False)
-    elif output_file.endswith(".csv"):
-        df.to_csv(output_file, index=False)
-    elif output_file.endswith(".md"):
-        df.to_markdown(output_file, index=False)
-    else:
-        click.echo("Unsupported file format. Please use .csv, .xlsx, .json, .yaml, .yml, .html or .txt.")
-        return
-    click.echo(f"Inspection results saved to {output_file}")
+#     # Save the results to the specified output file
+#     logger.info(f"Saving results to {output_file}...")
+#     if output_file.endswith(".yaml") or output_file.endswith(".yml"):
+#         with open(output_file, 'w') as f:
+#             yaml.dump(df.iloc[0].to_dict(), f)
+#     elif output_file.endswith(".json"):
+#         df.to_json(output_file, orient='records', lines=True)
+#     elif output_file.endswith(".xlsx"):
+#         df.to_excel(output_file, index=False)
+#     elif output_file.endswith(".html"):
+#         df.to_html(output_file, index=False)
+#     elif output_file.endswith(".txt"):
+#         df.to_csv(output_file, sep='\t', index=False)
+#     elif output_file.endswith(".csv"):
+#         df.to_csv(output_file, index=False)
+#     elif output_file.endswith(".md"):
+#         df.to_markdown(output_file, index=False)
+#     else:
+#         click.echo("Unsupported file format. Please use .csv, .xlsx, .json, .yaml, .yml, .html or .txt.")
+#         return
+#     click.echo(f"Inspection results saved to {output_file}")
 
 @main.command()
 @click.argument('input_file')
 @click.argument('output_file')
-@click.option('--ignore-other-entries', "-ign",
-              is_flag=True,
-              help="If set, entries in the scraped table that are not in the input file will be removed from the reported file.")
-@click.option('--workers', default=10, help='Number of workers for batch inspection.')
 @click.option('--only-chain', "-oc",
                 type=click.STRING,
                 help="If set, only the specified chain will be inspected.")
@@ -136,13 +123,13 @@ def single(pdb_id, ligand_id, output_file, ignore_other_entries, only_chain, log
               type=click.Path(exists=False),
               default="ligand_inspector.log",
                 help="Path to the log file. Default is ligand_inspector.log.")
-@click.option("--keep-sdf", "-ks",
-              is_flag=True,
-              default=False,
-              help="If set, the content of the SDF file will be kept in the output csv file in the column 'Ligand sdf'.")
-def batch(input_file, output_file, ignore_other_entries, workers, only_chain, logging_level, log_file, keep_sdf):
+@click.option("--pdb-constraint-file", "-pcf",
+              type=click.Path(exists=False),
+              default=None,
+              help="Path to the PDB constraint file. If specified, the results will only show ligands in the specified PDB IDs. The file should contain one PDB ID per line.")
+def inspect(input_file, output_file, only_chain, logging_level, log_file, pdb_constraint_file):
     """
-    Inspect a batch of ligands as specified in <INPUT_FILE>. The input file should be a CSV file with columns 'PDB ID' and 'Ligand ID'. The results will be saved to <OUTPUT_FILE>. Supported formats are .csv, .xlsx, .json, .yaml, .html, and .txt.
+    Inspect a batch of ligands as specified in <INPUT_FILE>. The input file should be a .txt file that contains the ligand ids of the ligands that are supposed to be inspected. Make sure to put one ID per line. The results will be saved to <OUTPUT_FILE>. Supported formats are .csv, .xlsx, .json, .yaml, .html, and .txt.
     """
     setup_logger(log_file, logging_level)
     logger.info(f"Inspecting ligands in {input_file}")
@@ -156,18 +143,36 @@ def batch(input_file, output_file, ignore_other_entries, workers, only_chain, lo
         return
     
     logger.info(f"Reading input file {input_file}...")
-    df = pd.read_csv(input_file)
+    with open(input_file, 'r') as f:
+        ligand_ids = f.read().splitlines()
+        ligand_ids = [ligand_id.strip() for ligand_id in ligand_ids]
+        while "" in ligand_ids:
+            ligand_ids.remove("")
+    if len(ligand_ids) == 0:
+        logger.critical(f"Input file {input_file} is empty.")
+        return
+    logger.info(f"Found {len(ligand_ids)} ligands in input file.")
+
+    if pdb_constraint_file:
+        logger.info(f"Reading PDB constraint file {pdb_constraint_file}...")
+        with open(pdb_constraint_file, 'r') as f:
+            pdb_ids = f.read().splitlines()
+            pdb_ids = [pdb_id.strip() for pdb_id in pdb_ids]
+            while "" in pdb_ids:
+                pdb_ids.remove("")
+        if len(pdb_ids) == 0:
+            logger.critical(f"PDB constraint file {pdb_constraint_file} is empty.")
+            return
+        logger.info(f"Found {len(pdb_ids)} PDB IDs in constraint file.")
+    else:
+        logger.info(f"No PDB constraint file provided. Using all PDB IDs.")
+        pdb_ids = None
 
     li = LigandInspector()
-    logger.info(f"Downloading information from PDB...")
-    results = li.inspect_batch(df, n_workers=workers, ignore_other_entries=ignore_other_entries, only_chain=only_chain)
+    results = li.inspect_batch(ligand_ids, pdb_ids=pdb_ids, only_chain=only_chain)
     
     logger.info(f"Evaluating the provided data...")
     results = li.evaluate(results)
-
-    # drop the 'Ligand sdf' column
-    if not keep_sdf:
-        results = results.drop(columns=['Ligand sdf'], errors='ignore')
 
     # Save the results to the specified output file
     logger.info(f"Saving results to {output_file}...")
