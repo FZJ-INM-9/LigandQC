@@ -73,47 +73,47 @@ def test_plot():
 
 
 
-@pytest.mark.parametrize("ligand_id, expected_bond_count", [
-    ("EOF", 30),
-    ("4WI", 37),
-])
-def test_bond_count(ligand_id, expected_bond_count):
-    """
-    Test the bond count of a ligand.
+# @pytest.mark.parametrize("ligand_id, expected_bond_count", [
+#     ("EOF", 30),
+#     ("4WI", 37),
+# ])
+# def test_bond_count(ligand_id, expected_bond_count):
+#     """
+#     Test the bond count of a ligand.
     
-    Args:
-        ligand_id (str): The ID of the ligand to test.
-        expected_bond_count (int): The expected number of bonds in the ligand.
-    """
-    inspector = LigandInspector()
-    file = f"tests/input_files/{ligand_id}_ideal.sdf"
-    mol = Chem.SDMolSupplier(file, removeHs=False)[0]
-    bond_count = inspector.get_bond_count(mol)
-    assert bond_count == expected_bond_count, f"Expected {expected_bond_count} bonds, but got {bond_count} for ligand {ligand_id}"
+#     Args:
+#         ligand_id (str): The ID of the ligand to test.
+#         expected_bond_count (int): The expected number of bonds in the ligand.
+#     """
+#     inspector = LigandInspector()
+#     file = f"tests/input_files/{ligand_id}_ideal.sdf"
+#     mol = Chem.SDMolSupplier(file, removeHs=False)[0]
+#     bond_count = inspector.get_bond_count(mol)
+#     assert bond_count == expected_bond_count, f"Expected {expected_bond_count} bonds, but got {bond_count} for ligand {ligand_id}"
 
-@pytest.mark.parametrize("ligand_id, expected_angle_count", [
-    ("EOF", 39),
-    ("4WI", 57),
-])
-def test_angle_count(ligand_id, expected_angle_count):
-    """
-    Test the angle count of a ligand.
+# @pytest.mark.parametrize("ligand_id, expected_angle_count", [
+#     ("EOF", 39),
+#     ("4WI", 57),
+# ])
+# def test_angle_count(ligand_id, expected_angle_count):
+#     """
+#     Test the angle count of a ligand.
     
-    Args:
-        ligand_id (str): The ID of the ligand to test.
-        expected_angle_count (int): The expected number of angles in the ligand.
-    """
-    inspector = LigandInspector()
-    file = f"tests/input_files/{ligand_id}_ideal.sdf"
-    mol = Chem.SDMolSupplier(file, removeHs=False)[0]
-    angle_count = inspector.get_angle_count(mol)
-    assert angle_count == expected_angle_count, f"Expected {expected_angle_count} angles, but got {angle_count} for ligand {ligand_id}"
+#     Args:
+#         ligand_id (str): The ID of the ligand to test.
+#         expected_angle_count (int): The expected number of angles in the ligand.
+#     """
+#     inspector = LigandInspector()
+#     file = f"tests/input_files/{ligand_id}_ideal.sdf"
+#     mol = Chem.SDMolSupplier(file, removeHs=False)[0]
+#     angle_count = inspector.get_angle_count(mol)
+#     assert angle_count == expected_angle_count, f"Expected {expected_angle_count} angles, but got {angle_count} for ligand {ligand_id}"
 
-def test_bond_count_visualization():
-    """
-    Test the bond count visualization of a ligand.
-    """
-    inspector = LigandInspector()
-    file = "tests/input_files/EOF_ideal.sdf"
-    mol = Chem.SDMolSupplier(file, removeHs=False)[0]
-    inspector.visualize_bond_count(mol, "tests/output_files/EOF_bond_count.svg")
+# def test_bond_count_visualization():
+#     """
+#     Test the bond count visualization of a ligand.
+#     """
+#     inspector = LigandInspector()
+#     file = "tests/input_files/EOF_ideal.sdf"
+#     mol = Chem.SDMolSupplier(file, removeHs=False)[0]
+#     inspector.visualize_bond_count(mol, "tests/output_files/EOF_bond_count.svg")

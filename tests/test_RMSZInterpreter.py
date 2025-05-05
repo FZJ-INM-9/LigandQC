@@ -1,7 +1,6 @@
 import pytest
 
 from ligand_inspector.RMSZInterpreter import RMSZInterpreter
-from rdkit import Chem
 
 def test_rmsz_threshold_finding():
     """
