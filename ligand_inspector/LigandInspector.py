@@ -6,12 +6,7 @@ This class is responsible for inspecting the quality of the specified ligand and
 
 """
 
-import os
-import aiohttp
 import pandas as pd
-import asyncio
-from itertools import batched
-from bs4 import BeautifulSoup
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, MofNCompleteColumn, TimeRemainingColumn, track
 from rich.live import Live
 from rich.spinner import Spinner
@@ -23,12 +18,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from .RMSZInterpreter import RMSZInterpreter
 from .LigandDownloader import LigandDownloader
-from rdkit import Chem
 from .Logger import logger
-from rdkit import RDLogger
-from rdkit import Chem
-from rdkit.Chem.Draw.rdMolDraw2D import MolDraw2DSVG, MolDrawOptions
-from rdkit.Chem import AllChem
 from .RCSBInterface import RCSBInterface
 import json
 
