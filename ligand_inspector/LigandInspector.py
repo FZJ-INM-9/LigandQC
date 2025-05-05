@@ -257,6 +257,8 @@ class LigandInspector:
         
         """
 
+        df.dropna(inplace=True)
+
         fig, axs = plt.subplots(3, 3, figsize=(14, 14))
         n_bins = len(df) // 10
         if n_bins < 1:
@@ -353,7 +355,7 @@ class LigandInspector:
                      palette=colors)
         ax.set_xlabel("RMSZ-bond-length")
         ax.set_ylabel("Count")
-        ax.set_xlim(xmin=0)
+        ax.set_xlim(xmin=0, xmax=5)
 
     def plot_RMSZ_bond_angle(self, ax, df, colors):
         """
@@ -376,7 +378,7 @@ class LigandInspector:
                      palette=colors)
         ax.set_xlabel("RMSZ-bond-angle")
         ax.set_ylabel("Count")
-        ax.set_xlim(xmin=0)
+        ax.set_xlim(xmin=0, xmax=5)
 
     def plot_structural_outliers(self, ax, df, colors):
         """
@@ -399,7 +401,7 @@ class LigandInspector:
                      palette=colors)
         ax.set_xlabel("Structural outliers")
         ax.set_ylabel("Count")
-        ax.set_xlim(xmin=0)
+        ax.set_xlim(xmin=0, xmax=30)
     
     def plot_atomic_clashes(self, ax, df, colors, order):
         """
