@@ -30,6 +30,7 @@ from rdkit import Chem
 from rdkit.Chem.Draw.rdMolDraw2D import MolDraw2DSVG, MolDrawOptions
 from rdkit.Chem import AllChem
 from .RCSBInterface import RCSBInterface
+import json
 
 global CURRENT_ITEMS
 CURRENT_ITEMS = []
@@ -99,7 +100,7 @@ class LigandInspector:
         return df
 
     
-    def inspect_batch(self, ligand_ids, pdb_ids, only_chain=None):
+    def inspect_batch(self, ligand_ids, pdb_ids=None, only_chain=None, intermediate_save=None):
         """
         wrapper function for async inspection of a batch of pdb-ligand pairs.
 
@@ -108,6 +109,7 @@ class LigandInspector:
             pdb_ids (list[str]): A list of PDB IDs.
             n_workers (int): The number of worker tasks to create.
             only_chain (str): If set, only the specified chain will be reported.
+            intermediate_save (str): The path to the intermediate save file. If None, the default is "intermediate.json".
         
         Returns:
             pd.DataFrame: A DataFrame containing the inspection results for each pdb-ligand pair.
@@ -117,7 +119,17 @@ class LigandInspector:
         ligand_ids = list(set(ligand_ids))
         pdb_ids = list(set(pdb_ids)) if pdb_ids else None
 
-        self.df = interface.get_ligand_quality_data(ligand_ids, pdb_ids=pdb_ids)
+        data = interface.get_ligand_quality_data(ligand_ids, pdb_ids=pdb_ids)
+
+        # intermediate save
+        if intermediate_save is None:
+            intermediate_save = "intermediate.json"
+
+        with open(intermediate_save, "w") as f:
+            json.dump(data, f, indent=4)
+
+        # process the data
+        self.df = interface.process_ligand_quality_data(data, ligand_ids, pdb_ids=pdb_ids)
         
         self.df = self.filter_df(self.df, only_chain=only_chain)
 

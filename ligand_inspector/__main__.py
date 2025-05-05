@@ -19,6 +19,7 @@ import pandas as pd
 import yaml
 import logging
 from .LigandInspector import *
+import os
 from . import __version__
 
 
@@ -127,7 +128,11 @@ version: {__version__}
               type=click.Path(exists=False),
               default=None,
               help="Path to the PDB constraint file. If specified, the results will only show ligands in the specified PDB IDs. The file should contain one PDB ID per line.")
-def inspect(input_file, output_file, only_chain, logging_level, log_file, pdb_constraint_file):
+@click.option("--intermediate-save-file", "-isf",
+              type=click.Path(exists=False),
+              default="intermediate_results.json",
+              help="Path to the intermediate save file. If specified, the intermediate results will be saved to this file.")
+def inspect(input_file, output_file, only_chain, logging_level, log_file, pdb_constraint_file, intermediate_save_file):
     """
     Inspect a batch of ligands as specified in <INPUT_FILE>. The input file should be a .txt file that contains the ligand ids of the ligands that are supposed to be inspected. Make sure to put one ID per line. The results will be saved to <OUTPUT_FILE>. Supported formats are .csv, .xlsx, .json, .yaml, .html, and .txt.
     """
@@ -169,7 +174,7 @@ def inspect(input_file, output_file, only_chain, logging_level, log_file, pdb_co
         pdb_ids = None
 
     li = LigandInspector()
-    results = li.inspect_batch(ligand_ids, pdb_ids=pdb_ids, only_chain=only_chain)
+    results = li.inspect_batch(ligand_ids, pdb_ids=pdb_ids, only_chain=only_chain, intermediate_save=intermediate_save_file)
     
     logger.info(f"Evaluating the provided data...")
     results = li.evaluate(results)

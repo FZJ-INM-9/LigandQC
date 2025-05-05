@@ -54,7 +54,7 @@ class RCSBInterface:
             pdb_ids (list, optional): A list of PDB IDs to filter the results by. Defaults to None.
 
         Returns:
-            pd.DataFrame: A DataFrame containing the ligand quality data.
+            list: A list of dictionaries containing the ligand quality data.
         
         """
         if pdb_ids is None:
@@ -75,41 +75,84 @@ class RCSBInterface:
                     "nonpolymer_entities.pdbx_entity_nonpoly.comp_id",
                     "nonpolymer_entities.nonpolymer_entity_instances.rcsb_nonpolymer_entity_instance_container_identifiers",
                     "nonpolymer_entities.nonpolymer_entity_instances.rcsb_nonpolymer_instance_validation_score",
+                    "exptl.method",
                     ])
             query.exec()
             data += query.get_response()['data']['entries']
         
+        return data
+
+    def process_ligand_quality_data(self, data, ligand_ids, pdb_ids=None):
+        """
+        Processes the ligand quality data retrieved from the RCSB PDB database.
+
+        Args:
+            data (list): A list of dictionaries containing the ligand quality data.
+            ligand_ids (list): A list of ligand IDs to filter the results by.
+            pdb_ids (list): A list of PDB IDs to filter the results by.
+        
+        Returns:
+            pd.DataFrame: A DataFrame containing the processed ligand quality data.
+        """
         logger.info("Processing the response data...")
         processed_data = []
+        key_map = {
+            "Ranking for goodness of fit": "ranking_model_fit",
+            "Ranking for geometry": "ranking_model_geometry",
+            "Model completeness": "completeness",
+            "Real space R factor": "RSR",
+            "Real space correlation coefficient": "RSCC",
+            "RMSZ-bond-length": "mogul_bonds_RMSZ",
+            "RMSZ-bond-angle": "mogul_angles_RMSZ",
+            "Average occupancy": "average_occupancy",
+            "Atomic clashes": "intermolecular_clashes",
+            "Stereochemical errors": "stereo_outliers",
+            "Outliers of bond length": "mogul_bond_outliers",
+            "Outliers of bond angle": "mogul_angle_outliers",
+            "Number of bonds": "num_mogul_bonds_RMSZ",
+            "Number of angles": "num_mogul_angles_RMSZ",
+            "Number of atoms": "natoms_eds"
+        }
+
+
         for i in data:
             for j in i["nonpolymer_entities"]:
+
+                if j["nonpolymer_entity_instances"] is None:
+                    continue
+                
                 for k in j["nonpolymer_entity_instances"]:
                     this_data = {}
                     this_data["PDB ID"] = i["rcsb_id"]
+                    this_data["Ligand occurence in PDB"] = "not evaluated."
                     this_data["Ligand ID"] = k["rcsb_nonpolymer_entity_instance_container_identifiers"]["comp_id"]
                     this_data["Chain ID"] = k["rcsb_nonpolymer_entity_instance_container_identifiers"]["auth_asym_id"]
                     this_data["Residue ID"] = k["rcsb_nonpolymer_entity_instance_container_identifiers"]["auth_seq_id"]
-                    this_data["Ranking for goodness of fit"] = k["rcsb_nonpolymer_instance_validation_score"][0]["ranking_model_fit"]
-                    this_data["Ranking for geometry"] = k["rcsb_nonpolymer_instance_validation_score"][0]["ranking_model_geometry"]
-                    this_data["Model completeness"] = k["rcsb_nonpolymer_instance_validation_score"][0]["completeness"]
-                    this_data["Real space R factor"] = k["rcsb_nonpolymer_instance_validation_score"][0]["RSR"]
-                    this_data["Real space correlation coefficient"] = k["rcsb_nonpolymer_instance_validation_score"][0]["RSCC"]
-                    this_data["RMSZ-bond-length"] = k["rcsb_nonpolymer_instance_validation_score"][0]["mogul_bonds_RMSZ"]
-                    this_data["RMSZ-bond-angle"] = k["rcsb_nonpolymer_instance_validation_score"][0]["mogul_angles_RMSZ"]
-                    this_data["Average occupancy"] = k["rcsb_nonpolymer_instance_validation_score"][0]["average_occupancy"]
-                    this_data["Atomic clashes"] = k["rcsb_nonpolymer_instance_validation_score"][0]["intermolecular_clashes"]
-                    this_data["Stereochemical errors"] = k["rcsb_nonpolymer_instance_validation_score"][0]["stereo_outliers"]
-                    this_data["Outliers of bond length"] = k["rcsb_nonpolymer_instance_validation_score"][0]["mogul_bond_outliers"]
-                    this_data["Outliers of bond angle"] = k["rcsb_nonpolymer_instance_validation_score"][0]["mogul_angle_outliers"]
-                    this_data["Ligand occurence in PDB"] = len(pdb_ids)
-                    this_data["Structural outliers"] = this_data["Outliers of bond length"] + this_data["Outliers of bond angle"]
-                    this_data["Number of bonds"] = k["rcsb_nonpolymer_instance_validation_score"][0]["num_mogul_bonds_RMSZ"]
-                    this_data["Number of angles"] = k["rcsb_nonpolymer_instance_validation_score"][0]["num_mogul_angles_RMSZ"]
-                    this_data["Number of atoms"] = k["rcsb_nonpolymer_instance_validation_score"][0]["natoms_eds"]
+                    if i["exptl"] is None:
+                        this_data["Experimental Method"] = None
+                    else:
+                        this_data["Experimental Method"] = i["exptl"][0]["method"]
+
+                    if k["rcsb_nonpolymer_instance_validation_score"] is None:
+                        for key, value in key_map.items():
+                            this_data[key] = None
+                    else:
+
+                        for key, value in key_map.items():
+                            if value in k["rcsb_nonpolymer_instance_validation_score"][0]:
+                                this_data[key] = k["rcsb_nonpolymer_instance_validation_score"][0][value]
+                            else:
+                                this_data[key] = None
+
+                    if (this_data["Outliers of bond length"] is not None) and (this_data["Outliers of bond angle"] is not None):
+                        this_data["Structural outliers"] = this_data["Outliers of bond length"] + this_data["Outliers of bond angle"]
+                    else:
+                        this_data["Structural outliers"] = None
                     processed_data.append(this_data)
         df = pd.DataFrame(processed_data)
         df = df.drop_duplicates()
         df = df[df["Ligand ID"].isin(ligand_ids)]
-        df = df[df["PDB ID"].isin(pdb_ids)]
+        if pdb_ids is not None:
+            df = df[df["PDB ID"].isin(pdb_ids)]
         df = df.reset_index(drop=True)
         return df
