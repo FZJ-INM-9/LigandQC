@@ -36,18 +36,45 @@ Once the virtual environment is activated, you can use the tool as follows:
 ligand_inspector --help
 ```
 
-This will show you the available subcommands, arguments and options. There are two modes of operation: single and batch.
-In the single mode, you can inspect a single ligand by providing the PDB ID of the structure it is bound to and the three letter Ligand ID. The output will be saved to the provided csv file path.
+This will show you the available subcommands, arguments and options. There are currently three subcommands available: `inspect`, `get` and `plot`.
+The `inspect` subcommand is used to obtain the ligand quality data from the Protein Data Bank and save it to a file. The `get` subcommand is used to obtain the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD) and save it to a file.
+The `plot` subcommand is used to plot the obtained ligand quality data of one or more ligands across multiple PDB files.
+
+## :mag: Inspection mode
+The inspection mode is used to obtain the ligand quality data from the Protein Data Bank and save it to a file. The following command will inspect a single ligand in a PDB file and save the output to a yaml file:
 
 ```bash
-ligand_inspector single 5REJ T1V output.csv
+ligand_inspector inspect INPUT_FILE OUTPUT_FILE
 ```
 
-In the batch mode, you can provide a csv file containing two columns ("PDB ID" and "Ligand ID"). The script will read the file and inspect all rows. The output will be saved to the provided csv file path.
+The `INPUT_FILE` is a `.txt` file containing the three letter ligand ids (one per line) that you want to inspect. The `OUTPUT_FILE` is the path to the output file where the results will be saved. The output file can be `.csv`, `.xlsx`, `.json`, `.yaml`, `.html`, or `.txt`.
+
+There are several options available to customize the inspection process:
+- `--only-chain`: Only inspect the specified chain in the PDB file. This option is useful if you want to inspect a specific chain in a multi-chain PDB file.
+- `--logging-level`: Set the logging level. The default is `INFO`, but you can set it to `DEBUG` or `WARNING` to see more or less output.
+- `--log-file`: Set the path to the log file. The default is `ligand_inspector.log`, but you can set it to any path you want.
+- `--pdb-constraint-file`: Set the path to a `.txt` file containing the PDB IDs of the ligands you want to inspect. This option is useful if you want to inspect only specific PDB files.
+- `--intermediate-save-file`: Set the path to a file where the intermediate results will be saved. This option is useful if you want to save intermediate results for long-running inspections.
+
+## :bar_chart: Plotting mode
+The plotting mode is used to plot the obtained ligand quality data of one or more ligands across multiple PDB files. The following command will plot the ligand quality data and save the output to a file:
 
 ```bash
-ligand_inspector batch input.csv output.csv
+ligand_inspector plot INPUT_FILE OUTPUT_FILE
 ```
+The `INPUT_FILE` is the path to the input file containing the ligand quality data (`.csv`-file obtained from the inspection mode). The `OUTPUT_FILE` is the path to the output file where the plot will be saved. The output file can be `.png`, or `.svg`.
+
+here's an example of the ligand quality fo the ligand `4WI`, also known as Nirmatrelvir, a protease inhibitor used in the treatment of COVID-19. As of 2025-05-05, 84 ligand quality entries are available in the PDB.
+
+<img src="/docs/4WI_evaluation.png" width="400">
+
+## :inbox_tray: Get mode
+The get mode is used to obtain the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD) and save it to a file. The following command will get the ideal 3D coordinates of a ligand and save it to a file:
+
+```bash
+ligand_inspector get LIGAND_ID OUTPUT_FILE
+```
+
 
 # :brain: Rationale
 The goal of this project is to provide a simple and easy to use tool to inspect the quality of ligands in protein structures. The tool will scrape the data from the Protein Data Bank and provide a summary of the quality of the ligand. The tool will also provide a way to save the data to a csv file for further analysis.
@@ -113,7 +140,19 @@ The size of the true population was chosen to be 1E7, which is large enough to b
 
 # :alembic: Example
 ```bash
-ligand_inspector single 7TLL 4WI output.yaml --only-chain "A" --ignore-other-entries
+cat > ligand_ids.txt << EOF
+4WI
+EOF
+
+cat > pdb_ids.txt << EOF
+7TLL
+EOF
+
+ligand_inspector inspect \
+    ligand_ids.txt \
+    output.yaml \
+    --pdb-constraint-file pdb_ids.txt \
+    --only-chain "A"
 ```
 
 yields the following output:
