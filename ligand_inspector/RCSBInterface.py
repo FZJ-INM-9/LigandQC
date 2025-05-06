@@ -111,7 +111,8 @@ class RCSBInterface:
             "Outliers of bond angle": "mogul_angle_outliers",
             "Number of bonds": "num_mogul_bonds_RMSZ",
             "Number of angles": "num_mogul_angles_RMSZ",
-            "Number of atoms": "natoms_eds"
+            "Number of atoms": "natoms_eds",
+            "Is Subject of Investigation": "is_subject_of_investigation",
         }
 
 
@@ -143,6 +144,7 @@ class RCSBInterface:
                                 this_data[key] = k["rcsb_nonpolymer_instance_validation_score"][0][value]
                             else:
                                 this_data[key] = None
+                    this_data["Is Subject of Investigation"] = this_data["Is Subject of Investigation"] == "Y"
 
                     if (this_data["Outliers of bond length"] is not None) and (this_data["Outliers of bond angle"] is not None):
                         this_data["Structural outliers"] = this_data["Outliers of bond length"] + this_data["Outliers of bond angle"]

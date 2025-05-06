@@ -70,13 +70,14 @@ class LigandInspector:
 
 
     
-    def filter_df(self, df, only_chain=None):
+    def filter_df(self, df, only_chain=None, only_SOI=False):
         """
         filters the DataFrame as specified by the input parameters.
 
         Args:
             df (pd.DataFrame): The DataFrame to be filtered.
             only_chain (str): If set, only the specified chain will be reported.
+            only_SOI (bool): If True, only the entries that are subject of investigation will be kept in the output file.
 
         Returns:
             pd.DataFrame: The filtered DataFrame.
@@ -86,11 +87,18 @@ class LigandInspector:
         if only_chain is not None:
             # remove entries that do not match the chain
             df = df[df["Chain ID"]== only_chain]
+        
+        if only_SOI:
+            # remove entries that are not subject of investigation
+            df = df[df["Is Subject of Investigation"]== True]
+
+        # reset the index
+        df = df.reset_index(drop=True)
 
         return df
 
     
-    def inspect_batch(self, ligand_ids, pdb_ids=None, only_chain=None, intermediate_save=None):
+    def inspect_batch(self, ligand_ids, pdb_ids=None, only_chain=None, intermediate_save=None, only_SOI=False):
         """
         wrapper function for async inspection of a batch of pdb-ligand pairs.
 
@@ -100,6 +108,7 @@ class LigandInspector:
             n_workers (int): The number of worker tasks to create.
             only_chain (str): If set, only the specified chain will be reported.
             intermediate_save (str): The path to the intermediate save file. If None, the default is "intermediate.json".
+            only_SOI (bool): If True, only the entries that are subject of investigation will be kept in the output file.
         
         Returns:
             pd.DataFrame: A DataFrame containing the inspection results for each pdb-ligand pair.
@@ -121,7 +130,7 @@ class LigandInspector:
         # process the data
         self.df = interface.process_ligand_quality_data(data, ligand_ids, pdb_ids=pdb_ids)
         
-        self.df = self.filter_df(self.df, only_chain=only_chain)
+        self.df = self.filter_df(self.df, only_chain=only_chain, only_SOI=only_SOI)
 
         return self.df
        
