@@ -1,9 +1,8 @@
-<a href="https://gitmoji.dev">
-  <img
-    src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?style=flat-square"
-    alt="Gitmoji"
-  />
-</a>
+![HDS-LEE Badge](https://img.shields.io/badge/HDS--LEE-%2305e5ba)
+![JSC Badge](https://img.shields.io/badge/Forschungszentrum_J%C3%BClich-JSC-%23023d6b)
+![INM-9 Badge](https://img.shields.io/badge/Forschungszentrum_J%C3%BClich-INM--9-%23023d6b)
+![RWTH Badge](https://img.shields.io/badge/RWTH--Aachen-%2300549f)
+
 
 # :mag: Webscraping Ligand Quality
 
