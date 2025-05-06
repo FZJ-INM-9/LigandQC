@@ -116,6 +116,9 @@ version: {__version__}
 @click.option('--only-chain', "-oc",
                 type=click.STRING,
                 help="If set, only the specified chain will be inspected.")
+@click.option("--only-SOI", "-os",
+                is_flag=True,
+                help="If set, only the ligands that are subject of investigation will be inspected.")
 @click.option('--logging-level', '-ll',
               type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], case_sensitive=False),
               default='INFO',
@@ -132,7 +135,7 @@ version: {__version__}
               type=click.Path(exists=False),
               default="intermediate_results.json",
               help="Path to the intermediate save file. If specified, the intermediate results will be saved to this file.")
-def inspect(input_file, output_file, only_chain, logging_level, log_file, pdb_constraint_file, intermediate_save_file):
+def inspect(input_file, output_file, only_chain, only_soi, logging_level, log_file, pdb_constraint_file, intermediate_save_file):
     """
     Inspect a batch of ligands as specified in <INPUT_FILE>. The input file should be a .txt file that contains the ligand ids of the ligands that are supposed to be inspected. Make sure to put one ID per line. The results will be saved to <OUTPUT_FILE>. Supported formats are .csv, .xlsx, .json, .yaml, .html, and .txt.
     """
@@ -174,7 +177,7 @@ def inspect(input_file, output_file, only_chain, logging_level, log_file, pdb_co
         pdb_ids = None
 
     li = LigandInspector()
-    results = li.inspect_batch(ligand_ids, pdb_ids=pdb_ids, only_chain=only_chain, intermediate_save=intermediate_save_file)
+    results = li.inspect_batch(ligand_ids, pdb_ids=pdb_ids, only_chain=only_chain, intermediate_save=intermediate_save_file, only_SOI=only_soi)
     
     logger.info(f"Evaluating the provided data...")
     results = li.evaluate(results)
