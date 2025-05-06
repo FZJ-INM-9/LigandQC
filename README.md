@@ -1,8 +1,27 @@
-![HDS-LEE Badge](https://img.shields.io/badge/HDS--LEE-%2305e5ba)
-![JSC Badge](https://img.shields.io/badge/Forschungszentrum_J%C3%BClich-JSC-%23023d6b)
-![INM-9 Badge](https://img.shields.io/badge/Forschungszentrum_J%C3%BClich-INM--9-%23023d6b)
-![RWTH Badge](https://img.shields.io/badge/RWTH--Aachen-%2300549f)
-
+<a href="https://www.hds-lee.de/">
+  <img
+    src="https://img.shields.io/badge/HDS--LEE-%2305e5ba"
+    alt="HDS-LEE"
+  />
+</a>
+<a href="https://www.fz-juelich.de/en/ias/jsc">
+  <img
+    src="https://img.shields.io/badge/Forschungszentrum_J%C3%BClich-JSC-%23023d6b"
+    alt="Forschungszentrum Jülich JSC"
+  />
+</a>
+<a href="https://www.fz-juelich.de/en/inm/inm-9">
+  <img
+    src="https://img.shields.io/badge/Forschungszentrum_J%C3%BClich-INM--9-%23023d6b"
+    alt="Forschungszentrum Jülich INM-9"
+  />
+</a>
+<a href="https://www.rwth-aachen.de">
+  <img
+    src="https://img.shields.io/badge/RWTH--Aachen-%2300549f"
+    alt="RWTH Aachen"
+  />
+</a>
 
 # :mag: Webscraping Ligand Quality
 
