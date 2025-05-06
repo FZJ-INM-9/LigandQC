@@ -35,6 +35,22 @@ def test_ligand_inspector_normal():
     assert df.loc[0]["Atomic clashes evaluation"] == "good"
     assert df.loc[0]["Stereochemical errors evaluation"] == "good"
     assert df.loc[0]["overall evaluation"] == "bad"
+    assert df.loc[0]["Is Subject of Investigation"] == True
+
+def test_subject_of_investigation():
+    pdb_ids = ["5REJ", "5RTV"]
+    ligand_ids = ["DMS"]
+    li = LigandInspector()
+    df = li.inspect_batch(ligand_ids, pdb_ids=pdb_ids, only_SOI=True)
+    df = li.evaluate(df)
+    assert df is not None
+    print(df[["Ligand ID", "PDB ID", "Is Subject of Investigation"]])
+    assert isinstance(df, pd.DataFrame)
+    assert not df.empty
+    assert len(df) == 1
+    assert df.loc[0]["PDB ID"] == "5RTV"
+    assert df.loc[0]["Ligand ID"] == "DMS"
+    assert df.loc[0]["Is Subject of Investigation"]
 
 # def test_ligand_inspector_invalid_pdb_id():
 #     pdb_id = "INVALID"
