@@ -21,6 +21,7 @@ from .LigandDownloader import LigandDownloader
 from .Logger import logger
 from .RCSBInterface import RCSBInterface
 import json
+from collections import defaultdict
 
 global CURRENT_ITEMS
 CURRENT_ITEMS = []
@@ -318,11 +319,42 @@ class LigandInspector:
             None
         
         """
-        sns.histplot(df, x="Real space R factor", binwidth=0.025,  ax=ax, hue="Real space R factor evaluation", multiple="stack", palette=colors, binrange=(0, 1))
+        sns.histplot(df, x="Real space R factor", 
+                     binwidth=0.025,  
+                     ax=ax, 
+                     hue="Real space R factor evaluation", 
+                     multiple="stack", 
+                     palette=colors, 
+                     binrange=(0, 1),)
         ax.set_xlabel("Real space R factor")
         ax.set_ylabel("Count")
         ax.set_xlim([0, 1])
         ax.vlines(self.rsr_factor_threshold_good, ymin=0, ymax=50, color='r', linestyle='--', label='RSR factor threshold')
+        
+        self.update_legend(ax, df, "Real space R factor evaluation", "RSR factor evaluation")
+    
+    def update_legend(self, ax, df, key, new_title):
+        """
+        updates the legend of the plot.
+        
+        Args:
+            axs (matplotlib.axes._axes.Axes): The axes to plot on.
+            df (pd.DataFrame): A DataFrame containing the inspection results.
+            key (str): The key to update the legend for.
+            new_title (str): The new title for the legend.
+        
+        Returns:
+            None
+        
+        """
+        ratios = {i:round(len(df[df[key] == i]) / len(df)*100, 1) for i in ["good", "ok", "bad"]}
+        ax.get_legend().set_title(new_title)
+        new_labels = {"good": f"good ({ratios["good"]}%)",
+                      "ok": f"ok ({ratios["ok"]}%)",
+                      "bad": f"bad ({ratios["bad"]}%)"}
+        for text in ax.get_legend().get_texts():
+            text.set_text(new_labels.get(text.get_text(), text.get_text()))
+
     
     def plot_RSCC(self, ax, df, colors):
         """
@@ -336,12 +368,15 @@ class LigandInspector:
             None
         
         """
+
         sns.histplot(df, x="Real space correlation coefficient", binwidth=0.025,  ax=ax, hue="Real space correlation coefficient evaluation", multiple="stack", palette=colors, binrange=(0, 1))
         ax.set_xlabel("Real space correlation coefficient")
         ax.set_ylabel("Count")
         ax.set_xlim([0, 1])
         ax.vlines(self.rscc_threshold_good, ymin=0, ymax=50, color='r', linestyle='--', label='RSCC threshold')
         ax.vlines(self.rscc_threshold_ok, ymin=0, ymax=50, color='orange', linestyle='--', label='RSCC threshold')
+
+        self.update_legend(ax, df, "Real space correlation coefficient evaluation", "RSCC evaluation")
     
     def plot_RMSZ_bond_length(self, ax, df, colors):
         """
@@ -366,6 +401,8 @@ class LigandInspector:
         ax.set_ylabel("Count")
         ax.set_xlim(xmin=0, xmax=5)
 
+        self.update_legend(ax, df, "RMSZ-bond-length evaluation", "RMSZ-bond-length evaluation")
+
     def plot_RMSZ_bond_angle(self, ax, df, colors):
         """
         creates a histogram of the RMSZ values.
@@ -388,6 +425,7 @@ class LigandInspector:
         ax.set_xlabel("RMSZ-bond-angle")
         ax.set_ylabel("Count")
         ax.set_xlim(xmin=0, xmax=5)
+        self.update_legend(ax, df, "RMSZ-bond-angle evaluation", "RMSZ-bond-angle evaluation")
 
     def plot_structural_outliers(self, ax, df, colors):
         """
@@ -411,6 +449,7 @@ class LigandInspector:
         ax.set_xlabel("Structural outliers")
         ax.set_ylabel("Count")
         ax.set_xlim(xmin=0, xmax=30)
+        self.update_legend(ax, df, "Structural outliers evaluation", "Structural outliers evaluation")
     
     def plot_atomic_clashes(self, ax, df, colors, order):
         """
@@ -436,6 +475,7 @@ class LigandInspector:
 
         ax.pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
         ax.set_xlabel("Atomic clashes")
+
 
     def plot_stereochemical_errors(self, ax, df, colors, order):
         """
@@ -497,11 +537,71 @@ class LigandInspector:
             None
         
         """
+        width = 0.35
         pie_data = df.groupby("overall evaluation").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
         pie_data_df.loc[:, "color"] = pie_data_df.index.map(lambda x: colors[x.split(" ")[0]])
         pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
 
-        ax.pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, colors=pie_data_df["color"], counterclock=False)
+        ax.pie(pie_data_df["count"], 
+               labels=pie_data_df.index, 
+               autopct='%1.1f%%', 
+               startangle=90, 
+               colors=pie_data_df["color"], 
+               counterclock=False,
+               radius=1,
+            #    wedgeprops=dict(width=width, edgecolor='w'),
+               )
         ax.set_xlabel("Overall evaluation")
+
+        # get the reasons for the evaluation
+        # ok_reasons = defaultdict(lambda: 0)
+        # bad_reasons = defaultdict(lambda: 0)
+
+        # def process_row(row):
+        #     if row["overall evaluation"] == "ok":
+        #         for col in df.columns:
+        #             if "evaluation" in col and row[col] == "ok":
+        #                 ok_reasons[col] += 1
+        #     elif row["overall evaluation"] == "bad":
+        #         for col in df.columns:
+        #             if "evaluation" in col and row[col] == "bad":
+        #                 bad_reasons[col] += 1
+
+        # df.apply(process_row, axis=1)
+        # ok_reasons.pop("overall evaluation")
+        # bad_reasons.pop("overall evaluation")
+
+        # # sort the reasons
+        # ok_reasons = dict(sorted(ok_reasons.items(), key=lambda item: item[1], reverse=True))
+        # bad_reasons = dict(sorted(bad_reasons.items(), key=lambda item: item[1], reverse=True))
+        # ok_reasons = {i: ok_reasons[i]/sum(ok_reasons.values())* 100 for i in ok_reasons}
+        # bad_reasons = {i: bad_reasons[i]/sum(bad_reasons.values())* 100 for i in bad_reasons}
+
+        # # print the reasons
+        # print("Reasons for ok evaluation:")
+        # for i in ok_reasons:
+        #     print(f"{i}: {ok_reasons[i]}")
+        # print("Reasons for bad evaluation:")
+        # for i in bad_reasons:
+        #     print(f"{i}: {bad_reasons[i]}")
+
+        # reasons_short = {"Real space R factor evaluation": "(a)",
+        #                  "Real space correlation coefficient evaluation": "(b)",
+        #                  "RMSZ-bond-length evaluation": "(c)",
+        #                  "RMSZ-bond-angle evaluation": "(d)",
+        #                  "Structural outliers evaluation": "(e)",
+        #                  "Stereochemical errors evaluation": "(g)",
+        #                  "Average occupancy evaluation": "(h)",
+        #                  "Atomic clashes evaluation": "(f)",}
+        # ok_reasons = {reasons_short[i]: ok_reasons[i] for i in ok_reasons}
+        # bad_reasons = {reasons_short[i]: bad_reasons[i] for i in bad_reasons}
+        
+        # ax.pie(list(ok_reasons.values()), 
+        #        labels=list(ok_reasons.keys()), 
+        #        autopct='%1.1f%%', 
+        #        startangle=90,
+        #        radius=1 - width,
+        #         wedgeprops=dict(width=width, edgecolor='w'),
+        #        )
