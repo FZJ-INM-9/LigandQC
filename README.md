@@ -211,3 +211,16 @@ Structural outliers: 8
 Structural outliers evaluation: ok
 overall evaluation: ok
 ```
+
+# :loudspeaker: Acknowledgements
+Contributors:
+- Christian Bergeest
+- Andrea Rizzi
+- Mercedes Alfonso-Prieto
+- Davide Mandelli
+- Ira Assent
+- Thomas Berlage
+- Giulia Rossetti
+
+This work was performed as part of the Helmholtz School for Data Science in Life, Earth and Energy (HDS-LEE) and received funding from the Helmholtz Association of German Research Centres.
+The authors would like to thank the Jülich Supercomputing Centre (JSC) for providing the computational resources and support.
