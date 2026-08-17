@@ -177,3 +177,11 @@ pyrightconfig.json
 
 tests/output_files/
 analysis/data/
+data_curation.ipynb
+analysis.ipynb
+intermediate.json
+intermediate_results.json
+output.csv
+output.yaml
+pdbs_metadata.csv
+test.txt

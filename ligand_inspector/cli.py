@@ -216,5 +216,40 @@ def plot(input_file, output_file):
     li.plot(df, output_file)
     logger.info(f"Plot saved to {output_file}")
 
+
+@main.command()
+@click.argument('ligand_id_file')
+@click.argument('output_directory')
+def download(ligand_id_file, output_directory):
+    """
+    Download the ligands from <LIGAND_ID_FILE> and save to <OUTPUT_DIRECTORY>.
+    """
+    downloader = LigandDownloader()
+
+    with open(ligand_id_file, 'r') as f:
+        ligand_ids = f.read().splitlines()
+        ligand_ids = [ligand_id.strip() for ligand_id in ligand_ids]
+        while "" in ligand_ids:
+            ligand_ids.remove("")
+        
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    ligands = downloader.download_multiple_ligands(ligand_ids)
+
+    for ligand_data in ligands:
+        # Get the ligand ID from the data
+        if ligand_data is None:
+            continue
+        ligand_id = ligand_data.split()[0].strip()
+
+        ligand_file = os.path.join(output_directory, f"{ligand_id}.sdf")
+        with open(ligand_file, 'w') as f:
+            f.write(ligand_data)
+        logger.info(f"Downloaded {ligand_id} to {ligand_file}")
+
+    logger.info(f"Downloaded {len(ligand_ids)} ligands to {output_directory}")
+
+    
 if __name__ == "__main__":
     main()
