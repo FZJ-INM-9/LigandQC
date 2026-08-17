@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.colors as mcolors
 
 
 class ParetoPlot:
@@ -18,6 +19,7 @@ class ParetoPlot:
         truncate: int = None,
         sort_by_category: bool = False,
         ascending: bool = True,
+        add_axis_indicators: bool = False,
     ):
         """
         Generates and saves a Pareto chart for the specified column.
@@ -29,6 +31,7 @@ class ParetoPlot:
                                     will be summarized as "Others". If None, all entries are shown.
             sort_by_category (bool, optional): sorts the values of the x-axis by category name/value.
             ascending (bool, optional): if sort_by_category is True, this boolean is applied to the sorting.
+            add_axis_indicators (bool, optional): if True, adds arrows to the bar and line plots to indicate to which axis they belong to.
 
         Returns:
             None
@@ -73,12 +76,12 @@ class ParetoPlot:
             value_counts.values,
             color="steelblue",
             alpha=0.7,
-            label="Count",
+            label="Number of " + column,
         )
 
         # Customize primary axis
         ax.set_xlabel(column, fontsize=12)
-        ax.set_ylabel("Count", fontsize=12, color="steelblue")
+        ax.set_ylabel(f"Number of observations", fontsize=12, color="steelblue")
         ax.tick_params(axis="y", labelcolor="steelblue")
         ax.set_xticks(range(len(value_counts)))
         ax.set_xticklabels(
@@ -111,18 +114,46 @@ class ParetoPlot:
 
         # Add horizontal line at 80% for Pareto principle
         ax2.axhline(y=80, color="red", linestyle="--", alpha=0.7, linewidth=1)
-        ax2.text(len(value_counts) * 0.7, 82, "80% Line", color="red", fontsize=10)
+        # ax2.text(len(value_counts) * 0.7, 82, "80% Line", color="red", fontsize=10)
 
         # Add grid for better readability
         ax.grid(True, alpha=0.3)
 
-        # Create combined legend
-        lines1, labels1 = ax.get_legend_handles_labels()
-        lines2, labels2 = ax2.get_legend_handles_labels()
-        ax.legend(
-            lines1 + lines2,
-            labels1 + labels2,
-            ncols=2,
-            bbox_to_anchor=(0.5, 1.0),
-            loc="lower center",
-        )
+        if add_axis_indicators:
+            # colorful arrows (single arrow per axis)
+
+            # --- parameters ---
+            x_span = len(value_counts) - 1
+            arrow_len = x_span * 0.15
+
+            # darker colors
+            bar_color = mcolors.to_rgb("steelblue")
+            bar_color_dark = tuple(max(0, c - 0.15) for c in bar_color)
+
+            line_color = mcolors.to_rgb("red")
+            line_color_dark = tuple(max(0, c - 0.15) for c in line_color)
+
+            # --- bar arrow: 1/3 position, pointing right ---
+            bar_idx = len(value_counts) // 3
+            bar_val = value_counts.values[bar_idx]
+
+            ax.annotate(
+                "",
+                xytext=(bar_idx, 0.5 * bar_val),
+                xy=(bar_idx - arrow_len, 0.5 * bar_val),
+                arrowprops=dict(arrowstyle="-|>", color=bar_color_dark, lw=2),
+                zorder=10,
+            )
+
+            # --- line arrow: smallest index in upper third, pointing right toward y-axis ---
+            upper_third_start = len(cumulative_pct) * 2 // 3
+            line_idx = upper_third_start
+            line_val = cumulative_pct.values[line_idx]
+
+            ax2.annotate(
+                "",
+                xytext=(line_idx, line_val),
+                xy=(line_idx + arrow_len, line_val),
+                arrowprops=dict(arrowstyle="-|>", color=line_color_dark, lw=2),
+                zorder=10,
+            )
