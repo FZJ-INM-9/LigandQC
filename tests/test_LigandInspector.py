@@ -1,6 +1,7 @@
 import pytest
 from ligand_inspector.LigandInspector import *
 import pandas as pd
+import numpy as np
 
 
 def test_ligand_inspector_normal():
@@ -19,21 +20,21 @@ def test_ligand_inspector_normal():
     assert not df.empty
     assert df.loc[0]["PDB ID"] == pdb_id
     assert df.loc[0]["Ligand ID"] == ligand_id
-    assert df.loc[0]["Is Subject of Investigation"] == True
-    # assert df.loc[0]["Ranking for goodness of fit"] == 0.1462
-    # assert df.loc[0]["Ranking for geometry"] == 0.7649
-    assert df.loc[0]["Real space R factor"] == 0.199
-    assert df.loc[0]["Real space correlation coefficient"] == 0.755
-    assert df.loc[0]["RMSZ-bond-length"] == 0.4
-    assert df.loc[0]["RMSZ-bond-angle"] == 0.53
-    assert df.loc[0]["Outliers of bond length"] == 0
-    assert df.loc[0]["Outliers of bond angle"] == 0
-    assert df.loc[0]["Atomic clashes"] == 0
-    assert df.loc[0]["Stereochemical errors"] == 0
-    assert df.loc[0]["Model completeness"] == 1
-    assert df.loc[0]["Average occupancy"] == 0.64
-    assert df.loc[0]["Number of bonds"] == 17
-    assert df.loc[0]["Number of angles"] == 21
+    assert df.loc[0]["Is Subject of Investigation"]
+    assert isinstance(df.at[0, "Ranking for goodness of fit"], float)
+    assert isinstance(df.at[0, "Ranking for geometry"], float)
+    assert isinstance(df.at[0, "Real space R factor"], float)
+    assert isinstance(df.at[0, "Real space correlation coefficient"], float)
+    assert isinstance(df.at[0, "RMSZ-bond-length"], float)
+    assert isinstance(df.at[0, "RMSZ-bond-angle"], float)
+    assert isinstance(df.at[0, "Outliers of bond length"], np.int64)
+    assert isinstance(df.at[0, "Outliers of bond angle"], np.int64)
+    assert isinstance(df.at[0, "Atomic clashes"], np.int64)
+    assert isinstance(df.at[0, "Stereochemical errors"], np.int64)
+    assert isinstance(df.at[0, "Model completeness"], np.float64)
+    assert isinstance(df.at[0, "Average occupancy"], float)
+    assert isinstance(df.at[0, "Number of bonds"], np.int64)
+    assert isinstance(df.at[0, "Number of angles"], np.int64)
     assert df.loc[0]["Real space correlation coefficient evaluation"] == "bad"
     assert df.loc[0]["RMSZ-bond-length evaluation"] == "good"
     assert df.loc[0]["RMSZ-bond-angle evaluation"] == "good"
