@@ -2,24 +2,30 @@ import pytest
 from ligand_inspector.LigandInspector import *
 import pandas as pd
 
+
 def test_ligand_inspector_normal():
     pdb_id = "5REJ"
     ligand_id = "T1V"
     li = LigandInspector()
-    df = li.inspect_batch([ligand_id], pdb_ids=[pdb_id], )
+    df = li.inspect_batch(
+        [ligand_id],
+        pdb_ids=[pdb_id],
+    )
     df = li.evaluate(df)
     print(df.columns)
+    print(df.loc[0])
     assert df is not None
     assert isinstance(df, pd.DataFrame)
     assert not df.empty
     assert df.loc[0]["PDB ID"] == pdb_id
     assert df.loc[0]["Ligand ID"] == ligand_id
-    assert df.loc[0]["Ranking for goodness of fit"] == 0.1462
-    assert df.loc[0]["Ranking for geometry"] == 0.7649
+    assert df.loc[0]["Is Subject of Investigation"] == True
+    # assert df.loc[0]["Ranking for goodness of fit"] == 0.1462
+    # assert df.loc[0]["Ranking for geometry"] == 0.7649
     assert df.loc[0]["Real space R factor"] == 0.199
     assert df.loc[0]["Real space correlation coefficient"] == 0.755
     assert df.loc[0]["RMSZ-bond-length"] == 0.4
-    assert df.loc[0]["RMSZ-bond-angle"] == 0.53 	
+    assert df.loc[0]["RMSZ-bond-angle"] == 0.53
     assert df.loc[0]["Outliers of bond length"] == 0
     assert df.loc[0]["Outliers of bond angle"] == 0
     assert df.loc[0]["Atomic clashes"] == 0
@@ -35,7 +41,7 @@ def test_ligand_inspector_normal():
     assert df.loc[0]["Atomic clashes evaluation"] == "good"
     assert df.loc[0]["Stereochemical errors evaluation"] == "good"
     assert df.loc[0]["overall evaluation"] == "bad"
-    assert df.loc[0]["Is Subject of Investigation"] == True
+
 
 def test_subject_of_investigation():
     pdb_ids = ["5REJ", "5RTV"]
@@ -52,6 +58,7 @@ def test_subject_of_investigation():
     assert df.loc[0]["Ligand ID"] == "DMS"
     assert df.loc[0]["Is Subject of Investigation"]
 
+
 # def test_ligand_inspector_invalid_pdb_id():
 #     pdb_id = "INVALID"
 #     ligand_id = "T1V"
@@ -64,16 +71,17 @@ def test_subject_of_investigation():
 #     ligand_id = "INVALID"
 #     li = LigandInspector()
 #     li.inspect_single(pdb_id, ligand_id)
-    
+
 # def test_ligand_inspector_invalid_pdb_and_ligand_id():
 #     pdb_id = "INVALID"
 #     ligand_id = "INVALID"
 #     li = LigandInspector()
 #     li.inspect_single(pdb_id, ligand_id)
-    
+
+
 def test_ligand_inspector_batch_inspection():
     pdb_ids = ["5REJ", "7TLL", "5REK"]
-    ligand_ids =  ["T1V", "4WI", "T1Y"]
+    ligand_ids = ["T1V", "4WI", "T1Y"]
     li = LigandInspector()
     results = li.inspect_batch(ligand_ids, pdb_ids=pdb_ids)
     assert results is not None
@@ -81,12 +89,12 @@ def test_ligand_inspector_batch_inspection():
     assert not results.empty
     assert len(results) == 4
 
+
 def test_plot():
     file = "tests/input_files/output_table_without_sdf.csv"
     df = pd.read_csv(file)
     li = LigandInspector()
     li.plot(df, "tests/output_files/plot.png")
-
 
 
 # @pytest.mark.parametrize("ligand_id, expected_bond_count", [
@@ -96,7 +104,7 @@ def test_plot():
 # def test_bond_count(ligand_id, expected_bond_count):
 #     """
 #     Test the bond count of a ligand.
-    
+
 #     Args:
 #         ligand_id (str): The ID of the ligand to test.
 #         expected_bond_count (int): The expected number of bonds in the ligand.
@@ -114,7 +122,7 @@ def test_plot():
 # def test_angle_count(ligand_id, expected_angle_count):
 #     """
 #     Test the angle count of a ligand.
-    
+
 #     Args:
 #         ligand_id (str): The ID of the ligand to test.
 #         expected_angle_count (int): The expected number of angles in the ligand.

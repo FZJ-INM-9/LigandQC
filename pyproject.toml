@@ -30,4 +30,4 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [project.scripts]
-ligand_inspector = "ligand_inspector.__main__:main"
+ligand_inspector = "ligand_inspector.cli:main"

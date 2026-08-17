@@ -23,9 +23,19 @@
   />
 </a>
 
-# :mag: Webscraping Ligand Quality
+# :mag: LigandQualityScraper - Webscraping Ligand Quality
 
 In this project, we will scrape the ligand quality data from the Protein Data Bank using Python.
+"Why?" you may ask? "Just look at the RCSB website report for the structure you're interested in, it's right there!" True, but what if you want to inspect the quality of a ligand across multiple PDB files? Or what if you want to inspect the quality of the ligands in a custom dataset of PDB files?
+This is the solution to your problem. This tool will scrape the ligand quality data from the Protein Data Bank and provide a summary of the quality of the ligand. The tool will also provide a way to save the data to a csv file for further analysis.
+
+# :sparkles: Features
+* Scrape ligand quality data from the Protein Data Bank using a command line interface (CLI)
+* Filter for Subject of Interest (SOI) ligands in a PDB file
+* Filter for specific chains in a PDB file
+* Save the data to a csv file for further analysis
+* Create plots of the ligand quality data across multiple PDB files
+* Download the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD)
 
 > [!WARNING] :construction: Construction Warning :construction:
 > This project is under active development and is not yet ready for production use. The code is not fully tested and may contain bugs. Use at your own risk.
