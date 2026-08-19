@@ -101,7 +101,7 @@ The `INPUT_FILE` is the path to the input file containing the ligand quality dat
 
 here's an example of the ligand quality fo the ligand `4WI`, also known as Nirmatrelvir, a protease inhibitor used in the treatment of COVID-19. As of 2025-05-05, 84 ligand quality entries are available in the PDB.
 
-<img src="/docs/4WI_evaluation.png" width="400">
+<img src="/example_analyses/nirmatrelvir_quality.png" width="400">
 
 ## :inbox_tray: Get mode
 The get mode is used to obtain the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD) and save it to a file. The following command will get the ideal 3D coordinates of a ligand and save it to a file:
@@ -173,7 +173,12 @@ The size of the true population was chosen to be 1E7, which is large enough to b
     <img src="/docs/rmsz_ok_threshold.png" width="400">
 </p>
 
-# :alembic: Example
+# :alembic: Examples
+
+Take a look at the 'example_analyses' folder for three examples of how to use the tool. In that folder, there are analyses for (1) all ligands in the PDB, (2) covalent ligands of SARS-CoV-2 Mpro and (3) the ligand Nirmatrelvir (4WI) in the PDB.
+
+Below is an example of how to inspect the ligand quality of the ligand `4WI` in the PDB file `7TLL` for chain `A`. The following command will inspect the ligand quality and save the output to a yaml file:
+
 ```bash
 cat > ligand_ids.txt << EOF
 4WI
