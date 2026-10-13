@@ -1,6 +1,6 @@
 # is meant to be run from the root of the repository
 
-cd analysis/covalent_ligands_MPro
+cd example_analyses/covalent_ligands_MPro
 
 ligand_inspector inspect \
     data/ligand_ids.txt \
