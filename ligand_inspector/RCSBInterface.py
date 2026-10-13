@@ -14,6 +14,7 @@ from .Logger import logger
 from itertools import batched
 from tqdm.auto import tqdm
 
+
 class RCSBInterface:
     """
     RCSBInterface is a class that interacts with the RCSB PDB database to retrieve ligand information.
@@ -36,13 +37,12 @@ class RCSBInterface:
         query = AttributeQuery(
             attribute="rcsb_chem_comp_container_identifiers.comp_id",
             operator="in",
-            value=ligand_ids
+            value=ligand_ids,
         )
         results = list(query())
         logger.info("Done fetching PDB IDs.")
         return results
-    
-    
+
     def get_ligand_quality_data(self, ligand_ids, pdb_ids=None):
         """
         Retrieves the ligand quality data for a given list of ligand IDs and PDB IDs.
@@ -55,14 +55,16 @@ class RCSBInterface:
 
         Returns:
             list: A list of dictionaries containing the ligand quality data.
-        
+
         """
         if pdb_ids is None:
             logger.info("Fetching all PDB IDs for the given ligand IDs.")
             pdb_ids = []
             pdb_ids.extend(self.get_all_pdbids(ligand_ids))
-        
-        logger.info(f"Fetching ligand quality data for ligand IDs: {ligand_ids} and PDB IDs: {pdb_ids}")
+
+        logger.info(
+            f"Fetching ligand quality data for ligand IDs: {ligand_ids} and PDB IDs: {pdb_ids}"
+        )
         data = []
         batch_size = 500
         n_batches = (len(pdb_ids) + batch_size - 1) // batch_size
@@ -76,10 +78,11 @@ class RCSBInterface:
                     "nonpolymer_entities.nonpolymer_entity_instances.rcsb_nonpolymer_entity_instance_container_identifiers",
                     "nonpolymer_entities.nonpolymer_entity_instances.rcsb_nonpolymer_instance_validation_score",
                     "exptl.method",
-                    ])
+                ],
+            )
             query.exec()
-            data += query.get_response()['data']['entries']
-        
+            data += query.get_response()["data"]["entries"]
+
         return data
 
     def process_ligand_quality_data(self, data, ligand_ids, pdb_ids=None):
@@ -90,7 +93,7 @@ class RCSBInterface:
             data (list): A list of dictionaries containing the ligand quality data.
             ligand_ids (list): A list of ligand IDs to filter the results by.
             pdb_ids (list): A list of PDB IDs to filter the results by.
-        
+
         Returns:
             pd.DataFrame: A DataFrame containing the processed ligand quality data.
         """
@@ -115,20 +118,30 @@ class RCSBInterface:
             "Is Subject of Investigation": "is_subject_of_investigation",
         }
 
-
         for i in data:
+            if i["nonpolymer_entities"] is None:
+                logger.warning(
+                    f"No nonpolymer entities found for PDB ID: {i['rcsb_id']}. Skipping this entry."
+                )
+                continue
             for j in i["nonpolymer_entities"]:
 
                 if j["nonpolymer_entity_instances"] is None:
                     continue
-                
+
                 for k in j["nonpolymer_entity_instances"]:
                     this_data = {}
                     this_data["PDB ID"] = i["rcsb_id"]
                     this_data["Ligand occurence in PDB"] = "not evaluated."
-                    this_data["Ligand ID"] = k["rcsb_nonpolymer_entity_instance_container_identifiers"]["comp_id"]
-                    this_data["Chain ID"] = k["rcsb_nonpolymer_entity_instance_container_identifiers"]["auth_asym_id"]
-                    this_data["Residue ID"] = k["rcsb_nonpolymer_entity_instance_container_identifiers"]["auth_seq_id"]
+                    this_data["Ligand ID"] = k[
+                        "rcsb_nonpolymer_entity_instance_container_identifiers"
+                    ]["comp_id"]
+                    this_data["Chain ID"] = k[
+                        "rcsb_nonpolymer_entity_instance_container_identifiers"
+                    ]["auth_asym_id"]
+                    this_data["Residue ID"] = k[
+                        "rcsb_nonpolymer_entity_instance_container_identifiers"
+                    ]["auth_seq_id"]
                     if i["exptl"] is None:
                         this_data["Experimental Method"] = None
                     else:
@@ -140,14 +153,26 @@ class RCSBInterface:
                     else:
 
                         for key, value in key_map.items():
-                            if value in k["rcsb_nonpolymer_instance_validation_score"][0]:
-                                this_data[key] = k["rcsb_nonpolymer_instance_validation_score"][0][value]
+                            if (
+                                value
+                                in k["rcsb_nonpolymer_instance_validation_score"][0]
+                            ):
+                                this_data[key] = k[
+                                    "rcsb_nonpolymer_instance_validation_score"
+                                ][0][value]
                             else:
                                 this_data[key] = None
-                    this_data["Is Subject of Investigation"] = this_data["Is Subject of Investigation"] == "Y"
+                    this_data["Is Subject of Investigation"] = (
+                        this_data["Is Subject of Investigation"] == "Y"
+                    )
 
-                    if (this_data["Outliers of bond length"] is not None) and (this_data["Outliers of bond angle"] is not None):
-                        this_data["Structural outliers"] = this_data["Outliers of bond length"] + this_data["Outliers of bond angle"]
+                    if (this_data["Outliers of bond length"] is not None) and (
+                        this_data["Outliers of bond angle"] is not None
+                    ):
+                        this_data["Structural outliers"] = (
+                            this_data["Outliers of bond length"]
+                            + this_data["Outliers of bond angle"]
+                        )
                     else:
                         this_data["Structural outliers"] = None
                     processed_data.append(this_data)

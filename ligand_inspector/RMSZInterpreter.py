@@ -105,7 +105,7 @@ class RMSZInterpreter:
             dict: F-statistic, p-value, and test result.
         """
         # Calculate the F-statistic
-        var1 = rmsz**2  # Variance of the first sample (RMSZ)
+        var1 = (n / (n - 1)) * rmsz**2  # Variance of the first sample (RMSZ)
         var2 = (
             self.reference_std_dev**2
         )  # Variance of the second sample (reference std dev)
@@ -170,19 +170,20 @@ class RMSZInterpreter:
         self.precomputed_rmsz_thresholds[n] = rounded_value
         return rounded_value
 
-    def plot_rationale_categorization(self, output_path=None):
+    def plot_rationale_categorization(self, output_path=None, alpha=0.05):
         """
         Plot the rationale for flagging ligands as "good" based on the topology and RMSZ value.
 
         Args:
             output_path (str): Path to save the plot. If None, the plot will be shown.
+            alpha (float): Significance level for the F-test (default is 0.05).
 
         Returns:
             None
         """
         n_values = range(2, 201)
 
-        rmsz_values = [self.find_rmsz_threshold(n) for n in n_values]
+        rmsz_values = [self.find_rmsz_threshold(n, alpha=alpha) for n in n_values]
 
         plt.figure(figsize=(7, 6))
         plt.plot(n_values, rmsz_values, label="RMSZ Threshold", color="blue")
