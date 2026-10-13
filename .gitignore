@@ -185,3 +185,6 @@ output.csv
 output.yaml
 pdbs_metadata.csv
 test.txt
+example_analyses/
+docs/latex_proof.tex
+tests/input_files/raw_rcsb_data2.json
