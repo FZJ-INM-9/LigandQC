@@ -10,7 +10,7 @@ It handles all API calls and data processing.
 from rcsbapi.data import DataQuery
 from rcsbapi.search import AttributeQuery
 import pandas as pd
-from .Logger import logger
+from .log import logger
 from itertools import batched
 from tqdm.auto import tqdm
 

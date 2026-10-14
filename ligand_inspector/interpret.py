@@ -19,7 +19,7 @@ from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 from scipy.stats import ttest_ind
 import seaborn as sns
-from .LigandDownloader import LigandDownloader
+from .download import LigandDownloader
 from scipy.stats import gaussian_kde
 
 

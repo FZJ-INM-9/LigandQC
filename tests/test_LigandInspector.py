@@ -1,5 +1,5 @@
 import pytest
-from ligand_inspector.LigandInspector import *
+from ligand_inspector.inspect import *
 import pandas as pd
 import numpy as np
 
