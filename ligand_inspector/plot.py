@@ -20,6 +20,7 @@ class ParetoPlot:
         sort_by_category: bool = False,
         ascending: bool = True,
         add_axis_indicators: bool = False,
+        rotate_xticks: bool = True,
     ):
         """
         Generates and saves a Pareto chart for the specified column.
@@ -86,9 +87,9 @@ class ParetoPlot:
         ax.set_xticks(range(len(value_counts)))
         ax.set_xticklabels(
             value_counts.index,
-            rotation=25,
-            ha="right",
-            rotation_mode="anchor",
+            rotation=25 if rotate_xticks else 0,
+            ha="right" if rotate_xticks else "center",
+            rotation_mode="anchor" if rotate_xticks else None,
             va="top",
         )
         ax.set_xlim(-0.5, len(value_counts) - 0.5)
