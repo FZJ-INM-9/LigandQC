@@ -18,7 +18,7 @@ The zip file is then
 import os
 import asyncio
 import aiohttp
-from .Logger import logger
+from .log import logger
 import tempfile
 from itertools import batched
 import zipfile

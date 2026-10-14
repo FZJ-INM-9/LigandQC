@@ -1,5 +1,5 @@
 import pytest
-from ligand_inspector.RCSBInterface import RCSBInterface
+from ligand_inspector.rcsb import RCSBInterface
 import pandas as pd
 import json
 

@@ -1,6 +1,6 @@
 import pytest
 
-from ligand_inspector.LigandDownloader import LigandDownloader
+from ligand_inspector.download import LigandDownloader
 
 
 def compare_sdf_file_contents(content1, content2):

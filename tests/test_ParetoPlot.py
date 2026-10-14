@@ -1,6 +1,6 @@
 import pytest
 import matplotlib.pyplot as plt
-from ligand_inspector.plots import ParetoPlot
+from ligand_inspector.plot import ParetoPlot
 import pandas as pd
 from random import choice
 

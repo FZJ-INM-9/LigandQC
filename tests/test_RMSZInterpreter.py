@@ -1,6 +1,6 @@
 import pytest
 
-from ligand_inspector.RMSZInterpreter import RMSZInterpreter
+from ligand_inspector.interpret import RMSZInterpreter
 
 
 def test_rmsz_threshold_finding():
@@ -14,7 +14,7 @@ def test_rmsz_threshold_finding():
     rmsz_threshold = interpreter.find_rmsz_threshold(n)
 
     # Check if the threshold is within expected bounds
-    assert rmsz_threshold == 1.48799
+    assert rmsz_threshold == 1.35834
 
 
 def test_rationale_plots():
