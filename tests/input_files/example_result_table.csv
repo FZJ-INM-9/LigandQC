@@ -1,0 +1,11 @@
+PDB ID,Ligand occurence in PDB,Ligand ID,Chain ID,Residue ID,Experimental Method,Ranking for goodness of fit,Ranking for geometry,Model completeness,Real space R factor,Real space correlation coefficient,RMSZ-bond-length,RMSZ-bond-angle,Average occupancy,Atomic clashes,Stereochemical errors,Outliers of bond length,Outliers of bond angle,Number of bonds,Number of angles,Number of atoms,Is Subject of Investigation,Structural outliers,Real space correlation coefficient evaluation,Real space R factor evaluation,Structural outliers evaluation,Stereochemical errors evaluation,Average occupancy evaluation,Atomic clashes evaluation,RMSZ-bond-length evaluation,RMSZ-bond-angle evaluation,overall evaluation
+8U9M,not evaluated.,VZT,A,401,X-RAY DIFFRACTION,0.3768,0.2498,1.0,0.127,0.859,1.36,1.69,1.0,0,0,3,10,42.0,52.0,39.0,True,13,ok,good,ok,good,good,good,ok,ok,ok
+7D3I,not evaluated.,GQU,A,401,X-RAY DIFFRACTION,0.7134,0.2777,1.0,0.073,0.93,1.31,1.59,1.0,0,0,2,8,35.0,43.0,33.0,True,10,ok,good,ok,good,good,good,ok,ok,ok
+7MLF,not evaluated.,C7A,A,401,X-RAY DIFFRACTION,0.5328,0.6619,1.0,0.113,0.912,0.38,0.72,1.0,0,0,0,1,32.0,43.0,30.0,True,1,ok,good,good,good,good,good,good,good,ok
+7UUC,not evaluated.,81L,A,401,X-RAY DIFFRACTION,0.2566,0.2594,1.0,0.164,0.858,1.09,1.89,1.0,1,0,1,8,39.0,50.0,37.0,True,9,ok,good,ok,good,good,ok,good,ok,ok
+7S6Y,not evaluated.,8GW,A,401,X-RAY DIFFRACTION,0.5007,0.2871,1.0,0.108,0.888,0.84,1.98,1.0,0,0,2,13,45.0,60.0,43.0,True,15,ok,good,ok,good,good,good,good,ok,ok
+8U9K,not evaluated.,W0B,A,401,X-RAY DIFFRACTION,0.3476,0.3593,1.0,0.132,0.853,1.28,1.2,1.0,0,0,3,6,40.0,48.0,37.0,True,9,ok,good,ok,good,good,good,ok,ok,ok
+7K0F,not evaluated.,VR4,A,401,X-RAY DIFFRACTION,0.6574,0.3614,1.0,0.093,0.938,1.45,1.03,1.0,0,0,5,4,41.0,48.0,39.0,True,9,ok,good,ok,good,good,good,ok,good,ok
+7S71,not evaluated.,8H9,A,401,X-RAY DIFFRACTION,0.5012,0.3935,1.0,0.112,0.895,0.89,1.38,1.0,0,0,3,9,46.0,59.0,45.0,True,12,ok,good,ok,good,good,good,good,ok,ok
+8WUR,not evaluated.,FNO,A,301,X-RAY DIFFRACTION,0.0159,0.1027,1.0,0.198,0.576,2.09,2.16,1.0,10,1,7,8,21.0,29.0,21.0,True,15,bad,good,ok,bad,good,bad,bad,bad,bad
+8WTI,not evaluated.,X1Z,A,401,X-RAY DIFFRACTION,0.8708,0.0357,1.0,0.055,0.967,2.43,3.25,1.0,1,0,12,9,44.0,56.0,43.0,True,21,good,good,bad,good,good,ok,bad,bad,bad

@@ -22,6 +22,7 @@ from .inspect import *
 import os
 from . import __version__
 from ligand_inspector.report import report
+from ligand_inspector.inspect import inspect
 
 
 
@@ -42,6 +43,8 @@ version: {__version__}
 """)
 
 main.add_command(report)
+main.add_command(inspect)
+
 # @main.command()
 # @click.argument('ligand_id')
 # @click.argument('output_file',

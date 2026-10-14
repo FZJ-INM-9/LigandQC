@@ -16,24 +16,19 @@ from rich.progress import (
     TimeRemainingColumn,
     track,
 )
-from rich.live import Live
-from rich.spinner import Spinner
-from rich.panel import Panel
-from rich.table import Table
-from rich.console import Group
-from contextlib import suppress
 import matplotlib.pyplot as plt
 import seaborn as sns
 import click
 import yaml
+import json
 import os
+from ligand_inspector.const import *
 from ligand_inspector.interpret import RMSZInterpreter
 from ligand_inspector.download import LigandDownloader
 from ligand_inspector.log import logger
 from ligand_inspector.rcsb import RCSBInterface
-import json
-from collections import defaultdict
 from ligand_inspector.plot import ParetoPlot
+from ligand_inspector.log import *
 
 global CURRENT_ITEMS
 CURRENT_ITEMS = []
@@ -51,45 +46,9 @@ class LigandInspector:
         """
         Initializes the LigandInspector class.
 
-        Args:
-            rsr_factor_threshold_good (float): The threshold for the real space R factor, below which the ligand is considered good, default is 0.4. Everything above is considered bad.
-            rscc_threshold_good (float): The threshold for the real space correlation coefficient, above which the ligand is considered good, default is 0.95.
-            rscc_threshold_ok (float): The threshold for the real space correlation coefficient, above which the ligand is considered ok, default is 0.8. Everything below is considered bad.
-            structural_outliers_threshold_good (int): The threshold for the number of Structural outliers, below which the ligand is considered good, default is 5.
-            structural_outliers_threshold_ok (int): The threshold for the number of Structural outliers, above which the ligand is considered ok, default is 15. Everything above is considered bad.
-            stereochemical_errors_threshold_good (int): The threshold for the number of stereochemical errors, below which the ligand is considered good, default is 0.
-            average_occupancy_threshold_good (float): The threshold for the average occupancy, above which the ligand is considered good, default is 0.95.
-            average_occupancy_threshold_ok (float): The threshold for the average occupancy, above which the ligand is considered ok, default is 0.5. Everything below is considered bad.
-            atomic_clashes_threshold_good (int): The threshold for the number of atomic clashes, below which the ligand is considered good, default is 0.
-            atomic_clashes_threshold_ok (int): The threshold for the number of atomic clashes, below which the ligand is considered ok, default is 2. Everything above is bad.
-
         """
 
         self.df = pd.DataFrame()
-        # evaluation criteria
-        self.rsr_factor_threshold_good = kwargs.get("rsr_factor_threshold_good", 0.4)
-        self.rscc_threshold_good = kwargs.get("rscc_threshold_good", 0.95)
-        self.rscc_threshold_ok = kwargs.get("rscc_threshold_ok", 0.8)
-        self.structural_outliers_threshold_good = kwargs.get(
-            "structural_outliers_threshold_good", 5
-        )
-        self.structural_outliers_threshold_ok = kwargs.get(
-            "structural_outliers_threshold_ok", 15
-        )
-        self.stereochemical_errors_threshold_good = kwargs.get(
-            "stereochemical_errors_threshold_good", 0
-        )
-        self.average_occupancy_threshold_good = kwargs.get(
-            "average_occupancy_threshold_good", 0.95
-        )
-        self.average_occupancy_threshold_ok = kwargs.get(
-            "average_occupancy_threshold_ok", 0.5
-        )
-        self.atomic_clashes_threshold_good = kwargs.get(
-            "atomic_clashes_threshold_good", 0
-        )
-        self.atomic_clashes_threshold_ok = kwargs.get("atomic_clashes_threshold_ok", 2)
-
         self.ligand_downloader = LigandDownloader()
         self.rmsz_interpreter = RMSZInterpreter()
         logger.debug("Starting LigandInspector")
@@ -180,24 +139,24 @@ class LigandInspector:
         """
 
         # evaluate the ligand
-        df["Real space correlation coefficient evaluation"] = df.apply(
+        df[f"{METRIC_RSCC} evaluation"] = df.apply(
             self.evaluate_rscc, axis=1
         )
-        df["Real space R factor evaluation"] = df.apply(
+        df[f"{METRIC_RSR} evaluation"] = df.apply(
             self.evaluate_rsr_factor, axis=1
         )
-        df["Structural outliers evaluation"] = df.apply(
+        df[f"{METRIC_STRUCTURAL_OUTLIERS} evaluation"] = df.apply(
             self.evaluate_structural_outliers, axis=1
         )
-        df["Stereochemical errors evaluation"] = df.apply(
+        df[f"{METRIC_STEREO_CHEMICAL_ERRORS} evaluation"] = df.apply(
             self.evaluate_stereochemical_errors, axis=1
         )
-        df["Average occupancy evaluation"] = df.apply(self.evaluate_occupancy, axis=1)
-        df["Atomic clashes evaluation"] = df.apply(self.evaluate_atomic_clashes, axis=1)
-        df["RMSZ-bond-length evaluation"] = df.apply(
+        df[f"{METRIC_AVG_OCCUPANCY} evaluation"] = df.apply(self.evaluate_occupancy, axis=1)
+        df[f"{METRIC_ATOMIC_CLASHES} evaluation"] = df.apply(self.evaluate_atomic_clashes, axis=1)
+        df[f"{METRIC_RMSZ_BOND_LENGTH} evaluation"] = df.apply(
             self.evaluate_rmsz_bond_length, axis=1
         )
-        df["RMSZ-bond-angle evaluation"] = df.apply(
+        df[f"{METRIC_RMSZ_BOND_ANGLE} evaluation"] = df.apply(
             self.evaluate_rmsz_bond_angle, axis=1
         )
         df["overall evaluation"] = df.apply(
@@ -211,7 +170,7 @@ class LigandInspector:
         evaluates the RMSZ-bond-length of the ligand
         """
         return self.rmsz_interpreter.interpret_rmsz(
-            row["Number of bonds"], row["RMSZ-bond-length"]
+            row["Number of bonds"], row[METRIC_RMSZ_BOND_LENGTH]
         )
 
     def evaluate_rmsz_bond_angle(self, row):
@@ -219,70 +178,100 @@ class LigandInspector:
         evaluates the RMSZ-bond-angle of the ligand
         """
         return self.rmsz_interpreter.interpret_rmsz(
-            row["Number of angles"], row["RMSZ-bond-angle"]
+            row["Number of angles"], row[METRIC_RMSZ_BOND_ANGLE]
         )
 
     def evaluate_rscc(self, row):
         """
         evaluates the RSCC value of the ligand
         """
-        if row["Real space correlation coefficient"] >= self.rscc_threshold_good:
-            return "good"
-        elif row["Real space correlation coefficient"] >= self.rscc_threshold_ok:
-            return "ok"
-        else:
-            return "bad"
+        if is_rscc_good(row[METRIC_RSCC]):
+            return CATEGORY_GOOD
+        if is_rscc_ok(row[METRIC_RSCC]):
+            return CATEGORY_OK
+        if is_rscc_bad(row[METRIC_RSCC]):
+            return CATEGORY_BAD
+        if pd.isna(row[METRIC_RSCC]):
+            logger.warning(f"{METRIC_RSCC} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown.")
+            return CATEGORY_UNKNOWN
+
+        raise ValueError(f"{METRIC_RSCC} value {row[METRIC_RSCC]} is not valid for evaluation.")
 
     def evaluate_rsr_factor(self, row):
         """
         evaluates the RSR factor of the ligand
         """
-        if row["Real space R factor"] <= self.rsr_factor_threshold_good:
-            return "good"
-        else:
-            return "bad"
+        if is_rsr_good(row[METRIC_RSR]):
+            return CATEGORY_GOOD
+        if is_rsr_bad(row[METRIC_RSR]):
+            return CATEGORY_BAD
+        if pd.isna(row[METRIC_RSR]):
+            logger.warning(f"{METRIC_RSR} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown.")
+            return CATEGORY_UNKNOWN
+
+        raise ValueError(f"{METRIC_RSR} value {row[METRIC_RSR]} is not valid for evaluation.")
 
     def evaluate_structural_outliers(self, row):
         """
         evaluates the Structural outliers of the ligand
         """
-        if row["Structural outliers"] <= self.structural_outliers_threshold_good:
-            return "good"
-        elif row["Structural outliers"] <= self.structural_outliers_threshold_ok:
-            return "ok"
-        else:
-            return "bad"
+        if is_structural_outliers_good(row[METRIC_STRUCTURAL_OUTLIERS]):
+            return CATEGORY_GOOD
+        if is_structural_outliers_ok(row[METRIC_STRUCTURAL_OUTLIERS]):
+            return CATEGORY_OK
+        if is_structural_outliers_bad(row[METRIC_STRUCTURAL_OUTLIERS]):
+            return CATEGORY_BAD
+        if pd.isna(row[METRIC_STRUCTURAL_OUTLIERS]):
+            logger.warning(f"{METRIC_STRUCTURAL_OUTLIERS} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown.")
+            return CATEGORY_UNKNOWN
+        
+        raise ValueError(f"{METRIC_STRUCTURAL_OUTLIERS} value {row[METRIC_STRUCTURAL_OUTLIERS]} is not valid for evaluation.")
 
     def evaluate_stereochemical_errors(self, row):
         """
         evaluates the stereochemical errors of the ligand
         """
-        if row["Stereochemical errors"] <= self.stereochemical_errors_threshold_good:
-            return "good"
-        else:
-            return "bad"
+        if is_stereo_chemical_errors_good(row[METRIC_STEREO_CHEMICAL_ERRORS]):
+            return CATEGORY_GOOD
+        if is_stereo_chemical_errors_bad(row[METRIC_STEREO_CHEMICAL_ERRORS]):
+            return CATEGORY_BAD
+        if pd.isna(row[METRIC_STEREO_CHEMICAL_ERRORS]):
+            logger.warning(f"{METRIC_STEREO_CHEMICAL_ERRORS} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown.")
+            return CATEGORY_UNKNOWN
+
+        raise ValueError(f"{METRIC_STEREO_CHEMICAL_ERRORS} value {row[METRIC_STEREO_CHEMICAL_ERRORS]} is not valid for evaluation.")
 
     def evaluate_occupancy(self, row):
         """
         evaluates the occupancy of the ligand
         """
-        if row["Average occupancy"] >= self.average_occupancy_threshold_good:
-            return "good"
-        elif row["Average occupancy"] >= self.average_occupancy_threshold_ok:
-            return "ok"
-        else:
-            return "bad"
+        if is_avg_occupancy_good(row[METRIC_AVG_OCCUPANCY]):
+            return CATEGORY_GOOD
+        if is_avg_occupancy_ok(row[METRIC_AVG_OCCUPANCY]):
+            return CATEGORY_OK
+        if is_avg_occupancy_bad(row[METRIC_AVG_OCCUPANCY]):
+            return CATEGORY_BAD
+        if pd.isna(row[METRIC_AVG_OCCUPANCY]):
+            logger.warning(f"{METRIC_AVG_OCCUPANCY} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown.")
+            return CATEGORY_UNKNOWN
+
+        raise ValueError(f"{METRIC_AVG_OCCUPANCY} value {row[METRIC_AVG_OCCUPANCY]} is not valid for evaluation.")
 
     def evaluate_atomic_clashes(self, row):
         """
         evaluates the atomic clashes of the ligand
         """
-        if row["Atomic clashes"] <= self.atomic_clashes_threshold_good:
-            return "good"
-        elif row["Atomic clashes"] <= self.atomic_clashes_threshold_ok:
-            return "ok"
-        else:
-            return "bad"
+        if is_atomic_clashes_good(row[METRIC_ATOMIC_CLASHES]):
+            return CATEGORY_GOOD
+        if is_atomic_clashes_ok(row[METRIC_ATOMIC_CLASHES]):
+            return CATEGORY_OK
+        if is_atomic_clashes_bad(row[METRIC_ATOMIC_CLASHES]):
+            return CATEGORY_BAD
+        if pd.isna(row[METRIC_ATOMIC_CLASHES]):
+            logger.warning(f"{METRIC_ATOMIC_CLASHES} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown.")
+            return CATEGORY_UNKNOWN
+
+        raise ValueError(f"{METRIC_ATOMIC_CLASHES} value {row[METRIC_ATOMIC_CLASHES]} is not valid for evaluation.")
 
     @staticmethod
     def overall_evaluation(row):
@@ -291,13 +280,13 @@ class LigandInspector:
         """
         evaluation_columns = [i for i in row.index if "evaluation" in i]
 
-        if any([row[i] == "bad" for i in evaluation_columns]):
-            return "bad"
+        if any([row[i] == CATEGORY_BAD for i in evaluation_columns]):
+            return CATEGORY_BAD
 
-        if any([row[i] == "ok" for i in evaluation_columns]):
-            return "ok"
+        if any([row[i] == CATEGORY_OK for i in evaluation_columns]):
+            return CATEGORY_OK
 
-        return "good"
+        return CATEGORY_GOOD
 
     def plot(self, df, filename):
         """
@@ -320,7 +309,7 @@ class LigandInspector:
         first_row = outer[0].subgridspec(1, 4, wspace=0.3)
         third_row = outer[2].subgridspec(1, 3, wspace=0.35)
 
-        colors = {"good": "green", "ok": "yellow", "bad": "orangered"}
+        colors = COLORS_MATPLOTLIB
 
         # Row 1: four distribution plots
         self.plot_RSR_factor(fig.add_subplot(first_row[0, 0]), df, colors)
@@ -333,13 +322,13 @@ class LigandInspector:
 
         # Row 3: pareto plots
         self.plot_pareto(
-            fig.add_subplot(third_row[0, 0]), df, "bad", colors, reverse=True
+            fig.add_subplot(third_row[0, 0]), df, CATEGORY_BAD, colors, reverse=True
         )
         self.plot_pareto(
-            fig.add_subplot(third_row[0, 1]), df, "ok", colors, reverse=True
+            fig.add_subplot(third_row[0, 1]), df, CATEGORY_OK, colors, reverse=True
         )
         self.plot_pareto(
-            fig.add_subplot(third_row[0, 2]), df, "good", colors, reverse=True
+            fig.add_subplot(third_row[0, 2]), df, CATEGORY_GOOD, colors, reverse=True
         )
 
         # # plot the histograms
@@ -366,34 +355,34 @@ class LigandInspector:
         good/ok/bad evaluations for selected metrics.
         """
         evaluation_columns = [
-            ("Structural outliers evaluation", "Structural outliers"),
-            ("Atomic clashes evaluation", "Atomic clashes"),
-            ("Stereochemical errors evaluation", "Stereochemical errors"),
-            ("Average occupancy evaluation", "Average occupancy"),
+            (f"{METRIC_STRUCTURAL_OUTLIERS} evaluation", METRIC_STRUCTURAL_OUTLIERS),
+            (f"{METRIC_ATOMIC_CLASHES} evaluation", METRIC_ATOMIC_CLASHES),
+            (f"{METRIC_STEREO_CHEMICAL_ERRORS} evaluation", METRIC_STEREO_CHEMICAL_ERRORS),
+            (f"{METRIC_AVG_OCCUPANCY} evaluation", METRIC_AVG_OCCUPANCY),
         ]
         threshold_labels = {
-            "Structural outliers": {
-                "good": "<= 5",
-                "ok": "6-15",
-                "bad": "> 15",
+            METRIC_STRUCTURAL_OUTLIERS: {
+                CATEGORY_GOOD: f"<= {THRESH_STRUCTURAL_OUTLIERS_GOOD}",
+                CATEGORY_OK: f"{THRESH_STRUCTURAL_OUTLIERS_GOOD + 1}-{THRESH_STRUCTURAL_OUTLIERS_BAD}",
+                CATEGORY_BAD: f"> {THRESH_STRUCTURAL_OUTLIERS_BAD}",
             },
-            "Atomic clashes": {
-                "good": "0",
-                "ok": "1-2",
-                "bad": "> 2",
+            METRIC_ATOMIC_CLASHES: {
+                CATEGORY_GOOD: f"{THRESH_ATOMIC_CLASHES_GOOD}",
+                CATEGORY_OK: f"{THRESH_ATOMIC_CLASHES_GOOD + 1}-{THRESH_ATOMIC_CLASHES_BAD}",
+                CATEGORY_BAD: f"> {THRESH_ATOMIC_CLASHES_BAD}",
             },
-            "Stereochemical errors": {
-                "good": "0",
-                "ok": "N/A",
-                "bad": "> 0",
+            METRIC_STEREO_CHEMICAL_ERRORS: {
+                CATEGORY_GOOD: f"{THRESH_STEREO_CHEMICAL_ERRORS_GOOD}",
+                CATEGORY_OK: "N/A",
+                CATEGORY_BAD: f"> {THRESH_STEREO_CHEMICAL_ERRORS_BAD}",
             },
-            "Average occupancy": {
-                "good": ">= 0.95",
-                "ok": "0.5-0.95",
-                "bad": "< 0.5",
+            METRIC_AVG_OCCUPANCY: {
+                CATEGORY_GOOD: f">= {THRESH_AVG_OCCUPANCY_GOOD}",
+                CATEGORY_OK: f"{THRESH_AVG_OCCUPANCY_BAD}-{THRESH_AVG_OCCUPANCY_GOOD}",
+                CATEGORY_BAD: f"< {THRESH_AVG_OCCUPANCY_BAD}",
             },
         }
-        statuses = ["good", "ok", "bad"]
+        statuses = [CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD]
 
         summary_df = pd.DataFrame(
             index=[label for _, label in evaluation_columns], columns=statuses
@@ -423,14 +412,14 @@ class LigandInspector:
             # Put percentage and threshold directly in each visible segment.
             for idx, label in enumerate(summary_df.index):
                 width = values.iloc[idx]
-                if width < 3:
+                if width < 5:
                     continue
                 center_x = left.iloc[idx] + width / 2
                 threshold_text = threshold_labels[label][status]
                 ax.text(
                     center_x,
                     idx,
-                    f"{status} ({threshold_text})\n{width:.1f}%",
+                    f"{status} ({width:.1f}%)",
                     ha="center",
                     va="center",
                     fontsize=8,
@@ -460,29 +449,27 @@ class LigandInspector:
         """
         sns.histplot(
             df,
-            x="Real space R factor",
+            x=METRIC_RSR,
             binwidth=0.025,
             ax=ax,
-            hue="Real space R factor evaluation",
-            hue_order=["good", "ok", "bad"],
+            hue=f"{METRIC_RSR} evaluation",
+            hue_order=[CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD],
             multiple="stack",
             palette=colors,
             binrange=(0, 1),
         )
-        ax.set_xlabel("Real space R factor")
+        ax.set_xlabel(METRIC_RSR)
         ax.set_ylabel("Count")
         ax.set_xlim([0, 1])
-        ax.vlines(
-            self.rsr_factor_threshold_good,
-            ymin=0,
-            ymax=50,
-            color="r",
-            linestyle="--",
-            label="RSR factor threshold",
-        )
+        # ax.axvline(
+        #     THRESH_RSR_GOOD,
+        #     color=COLORS_MATPLOTLIB[CATEGORY_GOOD],
+        #     linestyle="--",
+        #     label=f"{METRIC_RSR_SHORT} threshold",
+        # )
 
         self.update_legend(
-            ax, df, "Real space R factor evaluation", "RSR factor evaluation"
+            ax, df, f"{METRIC_RSR} evaluation", f"{METRIC_RSR_SHORT} evaluation"
         )
 
     def update_legend(self, ax, df, key, new_title):
@@ -501,12 +488,14 @@ class LigandInspector:
         """
         ratios = {
             i: round(len(df[df[key] == i]) / len(df) * 100, 1)
-            for i in ["good", "ok", "bad"]
+            for i in [CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD]
         }
         ax.get_legend().set_title(new_title)
-        new_labels = {"good": f"good ({ratios["good"]}%)",
-                      "ok": f"ok ({ratios["ok"]}%)",
-                      "bad": f"bad ({ratios["bad"]}%)"}
+        new_labels = {
+            CATEGORY_GOOD: f"{CATEGORY_GOOD} ({ratios[CATEGORY_GOOD]}%)",
+            CATEGORY_OK: f"{CATEGORY_OK} ({ratios[CATEGORY_OK]}%)",
+            CATEGORY_BAD: f"{CATEGORY_BAD} ({ratios[CATEGORY_BAD]}%)",
+        }
         for text in ax.get_legend().get_texts():
             text.set_text(new_labels.get(text.get_text(), text.get_text()))
 
@@ -526,37 +515,33 @@ class LigandInspector:
 
         sns.histplot(
             df,
-            x="Real space correlation coefficient",
+            x=METRIC_RSCC,
             binwidth=0.025,
             ax=ax,
-            hue="Real space correlation coefficient evaluation",
-            hue_order=["good", "ok", "bad"],
+            hue=f"{METRIC_RSCC} evaluation",
+            hue_order=[CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD],
             multiple="stack",
             palette=colors,
             binrange=(0, 1),
         )
-        ax.set_xlabel("Real space correlation coefficient")
+        ax.set_xlabel(METRIC_RSCC)
         ax.set_ylabel("Count")
         ax.set_xlim([0, 1])
-        ax.vlines(
-            self.rscc_threshold_good,
-            ymin=0,
-            ymax=50,
-            color="r",
-            linestyle="--",
-            label="RSCC threshold",
-        )
-        ax.vlines(
-            self.rscc_threshold_ok,
-            ymin=0,
-            ymax=50,
-            color="orange",
-            linestyle="--",
-            label="RSCC threshold",
-        )
+        # ax.axvline(
+        #     THRESH_RSCC_GOOD,
+        #     color=COLORS_MATPLOTLIB[CATEGORY_GOOD],
+        #     linestyle="--",
+        #     label=f"{METRIC_RSCC_SHORT} threshold",
+        # )
+        # ax.axvline(
+        #     THRESH_RSCC_BAD,
+        #     color=COLORS_MATPLOTLIB[CATEGORY_BAD],
+        #     linestyle="--",
+        #     label=f"{METRIC_RSCC_SHORT} threshold",
+        # )
 
         self.update_legend(
-            ax, df, "Real space correlation coefficient evaluation", "RSCC evaluation"
+            ax, df, f"{METRIC_RSCC} evaluation", f"Evaluation"
         )
 
     def plot_RMSZ_bond_length(self, ax, df, colors):
@@ -573,21 +558,21 @@ class LigandInspector:
         """
         sns.histplot(
             df,
-            x="RMSZ-bond-length",
+            x=METRIC_RMSZ_BOND_LENGTH,
             binwidth=0.2,
-            binrange=(0, max(df["RMSZ-bond-length"])),
+            binrange=(0, max(df[METRIC_RMSZ_BOND_LENGTH])),
             ax=ax,
-            hue="RMSZ-bond-length evaluation",
-            hue_order=["good", "ok", "bad"],
+            hue=f"{METRIC_RMSZ_BOND_LENGTH} evaluation",
+            hue_order=[CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD],
             multiple="stack",
             palette=colors,
         )
-        ax.set_xlabel("RMSZ-bond-length")
+        ax.set_xlabel(METRIC_RMSZ_BOND_LENGTH)
         ax.set_ylabel("Count")
         ax.set_xlim(xmin=0, xmax=5)
 
         self.update_legend(
-            ax, df, "RMSZ-bond-length evaluation", "RMSZ-bond-length evaluation"
+            ax, df, f"{METRIC_RMSZ_BOND_LENGTH} evaluation", f"Evaluation"
         )
 
     def plot_RMSZ_bond_angle(self, ax, df, colors):
@@ -604,20 +589,20 @@ class LigandInspector:
         """
         sns.histplot(
             df,
-            x="RMSZ-bond-angle",
+            x=METRIC_RMSZ_BOND_ANGLE,
             binwidth=0.2,
-            binrange=(0, max(df["RMSZ-bond-angle"])),
+            binrange=(0, max(df[METRIC_RMSZ_BOND_ANGLE])),
             ax=ax,
-            hue="RMSZ-bond-angle evaluation",
-            hue_order=["good", "ok", "bad"],
+            hue=f"{METRIC_RMSZ_BOND_ANGLE} evaluation",
+            hue_order=[CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD],
             multiple="stack",
             palette=colors,
         )
-        ax.set_xlabel("RMSZ-bond-angle")
+        ax.set_xlabel(METRIC_RMSZ_BOND_ANGLE)
         ax.set_ylabel("Count")
         ax.set_xlim(xmin=0, xmax=5)
         self.update_legend(
-            ax, df, "RMSZ-bond-angle evaluation", "RMSZ-bond-angle evaluation"
+            ax, df, f"{METRIC_RMSZ_BOND_ANGLE} evaluation", f"Evaluation"
         )
 
     def plot_structural_outliers(self, ax, df, colors):
@@ -634,19 +619,19 @@ class LigandInspector:
         """
         sns.histplot(
             df,
-            x="Structural outliers",
+            x=METRIC_STRUCTURAL_OUTLIERS,
             binwidth=2.5,
-            binrange=(0, max(df["Structural outliers"])),
+            binrange=(0, max(df[METRIC_STRUCTURAL_OUTLIERS])),
             ax=ax,
-            hue="Structural outliers evaluation",
+            hue=f"{METRIC_STRUCTURAL_OUTLIERS} evaluation",
             multiple="stack",
             palette=colors,
         )
-        ax.set_xlabel("Structural outliers")
+        ax.set_xlabel(METRIC_STRUCTURAL_OUTLIERS)
         ax.set_ylabel("Count")
         ax.set_xlim(xmin=0, xmax=30)
         self.update_legend(
-            ax, df, "Structural outliers evaluation", "Structural outliers evaluation"
+            ax, df, f"{METRIC_STRUCTURAL_OUTLIERS} evaluation", f"Evaluation"
         )
 
     def plot_atomic_clashes(self, ax, df, colors, order):
@@ -661,14 +646,18 @@ class LigandInspector:
             None
 
         """
-        pie_data = df.groupby("Atomic clashes evaluation").size()
+        pie_data = df.groupby(f"{METRIC_ATOMIC_CLASHES} evaluation").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
         pie_data_df.loc[:, "color"] = pie_data_df.index.map(
             lambda x: colors[x.split(" ")[0]]
         )
         pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
-        labels_map = {"good": "good (0)", "ok": "ok (1-2)", "bad": "bad (>2)"}
+        labels_map = {
+            CATEGORY_GOOD: f"{CATEGORY_GOOD} ({THRESH_ATOMIC_CLASHES_GOOD})",
+            CATEGORY_OK: f"{CATEGORY_OK} ({THRESH_ATOMIC_CLASHES_GOOD + 1}-{THRESH_ATOMIC_CLASHES_BAD})",
+            CATEGORY_BAD: f"{CATEGORY_BAD} (>{THRESH_ATOMIC_CLASHES_BAD})",
+        }
         pie_data_df = pie_data_df.rename(index=labels_map)
 
         ax.pie(
@@ -679,7 +668,7 @@ class LigandInspector:
             colors=pie_data_df["color"],
             counterclock=False,
         )
-        ax.set_xlabel("Atomic clashes")
+        ax.set_xlabel(METRIC_ATOMIC_CLASHES)
 
     def plot_stereochemical_errors(self, ax, df, colors, order):
         """
@@ -693,14 +682,17 @@ class LigandInspector:
             None
 
         """
-        pie_data = df.groupby("Stereochemical errors evaluation").size()
+        pie_data = df.groupby(f"{METRIC_STEREO_CHEMICAL_ERRORS} evaluation").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
         pie_data_df.loc[:, "color"] = pie_data_df.index.map(
             lambda x: colors[x.split(" ")[0]]
         )
         pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
-        labels_map = {"good": "good (0)", "bad": "bad (>0)"}
+        labels_map = {
+            CATEGORY_GOOD: f"{CATEGORY_GOOD} ({THRESH_STEREO_CHEMICAL_ERRORS_GOOD})",
+            CATEGORY_BAD: f"{CATEGORY_BAD} (>{THRESH_STEREO_CHEMICAL_ERRORS_BAD})",
+        }
         pie_data_df = pie_data_df.rename(index=labels_map)
 
         ax.pie(
@@ -711,7 +703,7 @@ class LigandInspector:
             colors=pie_data_df["color"],
             counterclock=False,
         )
-        ax.set_xlabel("Stereochemical errors")
+        ax.set_xlabel(METRIC_STEREO_CHEMICAL_ERRORS)
 
     def plot_average_occupancy(self, ax, df, colors, order):
         """
@@ -727,7 +719,7 @@ class LigandInspector:
         """
 
         # pie plot for the average occupancy
-        pie_data = df.groupby("Average occupancy evaluation").size()
+        pie_data = df.groupby(f"{METRIC_AVG_OCCUPANCY} evaluation").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
         pie_data_df.loc[:, "color"] = pie_data_df.index.map(
@@ -735,9 +727,9 @@ class LigandInspector:
         )
         pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
         labels_map = {
-            "good": "good (>0.95)",
-            "ok": "ok (0.5-0.95)",
-            "bad": "bad (<0.5)",
+            CATEGORY_GOOD: f"{CATEGORY_GOOD} (>={THRESH_AVG_OCCUPANCY_GOOD})",
+            CATEGORY_OK: f"{CATEGORY_OK} ({THRESH_AVG_OCCUPANCY_BAD}-{THRESH_AVG_OCCUPANCY_GOOD})",
+            CATEGORY_BAD: f"{CATEGORY_BAD} (<{THRESH_AVG_OCCUPANCY_BAD})",
         }
         pie_data_df = pie_data_df.rename(index=labels_map)
 
@@ -749,7 +741,7 @@ class LigandInspector:
             colors=pie_data_df["color"],
             counterclock=False,
         )
-        ax.set_xlabel("Average occupancy evaluation")
+        ax.set_xlabel(METRIC_AVG_OCCUPANCY)
 
     def plot_pareto(self, ax, df, category, colors, reverse=False):
         """
@@ -768,7 +760,7 @@ class LigandInspector:
             i for i in df.columns if "evaluation" in i and "overall" not in i
         ]
         pie_data_df = df.copy()
-        pie_data_df.loc[:, f"Count of '{category.capitalize()}' evaluations"] = (
+        pie_data_df.loc[:, f"Count of '{category}' evaluations"] = (
             pie_data_df[evaluation_columns].apply(
                 lambda x: (x == category).sum(), axis=1
             )
@@ -777,9 +769,10 @@ class LigandInspector:
         p = ParetoPlot(pie_data_df)
         p.plot(
             ax,
-            f"Count of '{category.capitalize()}' evaluations",
+            f"Count of '{category}' evaluations",
             sort_by_category=True,
             ascending=not reverse,
+            rotate_xticks=False,
         )
 
 

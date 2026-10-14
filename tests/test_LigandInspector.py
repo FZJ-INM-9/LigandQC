@@ -23,24 +23,24 @@ def test_ligand_inspector_normal():
     assert df.loc[0]["Is Subject of Investigation"]
     assert isinstance(df.at[0, "Ranking for goodness of fit"], float)
     assert isinstance(df.at[0, "Ranking for geometry"], float)
-    assert isinstance(df.at[0, "Real space R factor"], float)
-    assert isinstance(df.at[0, "Real space correlation coefficient"], float)
-    assert isinstance(df.at[0, "RMSZ-bond-length"], float)
-    assert isinstance(df.at[0, "RMSZ-bond-angle"], float)
+    assert isinstance(df.at[0, METRIC_RSR], float)
+    assert isinstance(df.at[0, METRIC_RSCC], float)
+    assert isinstance(df.at[0, METRIC_RMSZ_BOND_LENGTH], float)
+    assert isinstance(df.at[0, METRIC_RMSZ_BOND_ANGLE], float)
     assert isinstance(df.at[0, "Outliers of bond length"], np.int64)
     assert isinstance(df.at[0, "Outliers of bond angle"], np.int64)
-    assert isinstance(df.at[0, "Atomic clashes"], np.int64)
-    assert isinstance(df.at[0, "Stereochemical errors"], np.int64)
+    assert isinstance(df.at[0, METRIC_ATOMIC_CLASHES], np.int64)
+    assert isinstance(df.at[0, METRIC_STEREO_CHEMICAL_ERRORS], np.int64)
     assert isinstance(df.at[0, "Model completeness"], np.float64)
-    assert isinstance(df.at[0, "Average occupancy"], float)
+    assert isinstance(df.at[0, METRIC_AVG_OCCUPANCY], float)
     assert isinstance(df.at[0, "Number of bonds"], np.int64)
     assert isinstance(df.at[0, "Number of angles"], np.int64)
-    assert df.loc[0]["Real space correlation coefficient evaluation"] == "bad"
-    assert df.loc[0]["RMSZ-bond-length evaluation"] == "good"
-    assert df.loc[0]["RMSZ-bond-angle evaluation"] == "good"
-    assert df.loc[0]["Structural outliers evaluation"] == "good"
-    assert df.loc[0]["Atomic clashes evaluation"] == "good"
-    assert df.loc[0]["Stereochemical errors evaluation"] == "good"
+    assert df.loc[0][f"{METRIC_RSCC} evaluation"] == "bad"
+    assert df.loc[0][f"{METRIC_RMSZ_BOND_LENGTH} evaluation"] == "good"
+    assert df.loc[0][f"{METRIC_RMSZ_BOND_ANGLE} evaluation"] == "good"
+    assert df.loc[0][f"{METRIC_STRUCTURAL_OUTLIERS} evaluation"] == "good"
+    assert df.loc[0][f"{METRIC_ATOMIC_CLASHES} evaluation"] == "good"
+    assert df.loc[0][f"{METRIC_STEREO_CHEMICAL_ERRORS} evaluation"] == "good"
     assert df.loc[0]["overall evaluation"] == "bad"
 
 

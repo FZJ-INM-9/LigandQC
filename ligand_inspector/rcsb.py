@@ -13,6 +13,7 @@ import pandas as pd
 from .log import logger
 from itertools import batched
 from tqdm.auto import tqdm
+from ligand_inspector.const import *
 
 
 class RCSBInterface:
@@ -63,7 +64,7 @@ class RCSBInterface:
             pdb_ids.extend(self.get_all_pdbids(ligand_ids))
 
         logger.info(
-            f"Fetching ligand quality data for ligand IDs: {ligand_ids} and PDB IDs: {pdb_ids}"
+            f"Fetching ligand quality data for {len(ligand_ids)} ligand IDs and {len(pdb_ids)} PDB IDs..."
         )
         data = []
         batch_size = 500
@@ -103,13 +104,13 @@ class RCSBInterface:
             "Ranking for goodness of fit": "ranking_model_fit",
             "Ranking for geometry": "ranking_model_geometry",
             "Model completeness": "completeness",
-            "Real space R factor": "RSR",
-            "Real space correlation coefficient": "RSCC",
-            "RMSZ-bond-length": "mogul_bonds_RMSZ",
-            "RMSZ-bond-angle": "mogul_angles_RMSZ",
-            "Average occupancy": "average_occupancy",
-            "Atomic clashes": "intermolecular_clashes",
-            "Stereochemical errors": "stereo_outliers",
+            METRIC_RSR: "RSR",
+            METRIC_RSCC: "RSCC",
+            METRIC_RMSZ_BOND_LENGTH: "mogul_bonds_RMSZ",
+            METRIC_RMSZ_BOND_ANGLE: "mogul_angles_RMSZ",
+            METRIC_AVG_OCCUPANCY: "average_occupancy",
+            METRIC_ATOMIC_CLASHES: "intermolecular_clashes",
+            METRIC_STEREO_CHEMICAL_ERRORS: "stereo_outliers",
             "Outliers of bond length": "mogul_bond_outliers",
             "Outliers of bond angle": "mogul_angle_outliers",
             "Number of bonds": "num_mogul_bonds_RMSZ",
@@ -169,12 +170,12 @@ class RCSBInterface:
                     if (this_data["Outliers of bond length"] is not None) and (
                         this_data["Outliers of bond angle"] is not None
                     ):
-                        this_data["Structural outliers"] = (
+                        this_data[METRIC_STRUCTURAL_OUTLIERS] = (
                             this_data["Outliers of bond length"]
                             + this_data["Outliers of bond angle"]
                         )
                     else:
-                        this_data["Structural outliers"] = None
+                        this_data[METRIC_STRUCTURAL_OUTLIERS] = None
                     processed_data.append(this_data)
         df = pd.DataFrame(processed_data)
         df = df.drop_duplicates()

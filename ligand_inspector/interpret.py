@@ -2,7 +2,7 @@
 RMSZ
 ====
 
-RMSZ is a Python package to explore a rationale for categorizing the RMSZ value of bond lengths and angles in a ligand into the categories "good", "ok" and "bad".
+RMSZ is a Python package to explore a rationale for categorizing the RMSZ value of bond lengths and angles in a ligand into the categories 'good', 'ok' and 'bad'.
 In this script, we will explore the RMSZ of a standard deviation by
 1) generating a dataset that adheres to a normal distribution with a given mean and standard deviation called "reference"
 2) calculating the mean and standard deviation of the dataset "reference"
@@ -15,12 +15,8 @@ In this script, we will explore the RMSZ of a standard deviation by
 
 from scipy.stats import f
 import numpy as np
-from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
-from scipy.stats import ttest_ind
-import seaborn as sns
-from .download import LigandDownloader
-from scipy.stats import gaussian_kde
+from ligand_inspector.const import *
 
 
 def gaussian(x, mean, std_dev):
@@ -86,11 +82,11 @@ class RMSZInterpreter:
         rmsz_threshold = self.find_rmsz_threshold(n)
 
         if rmsz <= rmsz_threshold:
-            return "good"
+            return CATEGORY_GOOD
         elif rmsz <= self.ok_bad_threshold:
-            return "ok"
+            return CATEGORY_OK
         else:
-            return "bad"
+            return CATEGORY_BAD
 
     def perform_f_test(self, rmsz, n, alpha=0.05):
         """
@@ -172,7 +168,7 @@ class RMSZInterpreter:
 
     def plot_rationale_categorization(self, output_path=None, alpha=0.05):
         """
-        Plot the rationale for flagging ligands as "good" based on the topology and RMSZ value.
+        Plot the rationale for flagging ligands as 'good', 'ok', or 'bad' based on the topology and RMSZ value.
 
         Args:
             output_path (str): Path to save the plot. If None, the plot will be shown.
@@ -200,18 +196,18 @@ class RMSZInterpreter:
             n_values,
             y1=4.0,
             y2=self.ok_bad_threshold,
-            color="red",
+            color=COLORS_MATPLOTLIB[CATEGORY_BAD],
             alpha=opacity,
-            label="bad",
+            label=CATEGORY_BAD,
         )
         plt.fill_between(
             n_values,
             rmsz_values,
             self.ok_bad_threshold,
             where=(np.array(rmsz_values) < self.ok_bad_threshold),
-            color="yellow",
+            color=COLORS_MATPLOTLIB[CATEGORY_OK],
             alpha=opacity,
-            label="ok",
+            label=CATEGORY_OK,
         )
         # color between the rmsz values and 0
         plt.fill_between(
@@ -219,9 +215,9 @@ class RMSZInterpreter:
             rmsz_values,
             0,
             where=(np.array(rmsz_values) > 0),
-            color="green",
+            color=COLORS_MATPLOTLIB[CATEGORY_GOOD],
             alpha=opacity,
-            label="good",
+            label=CATEGORY_GOOD,
         )
 
         # fill above
