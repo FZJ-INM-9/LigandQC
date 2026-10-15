@@ -71,9 +71,10 @@ Once the virtual environment is activated, you can use the tool as follows:
 ligand_inspector --help
 ```
 
-This will show you the available subcommands, arguments and options. There are currently three subcommands available: `inspect`, `get` and `plot`.
-The `inspect` subcommand is used to obtain the ligand quality data from the Protein Data Bank and save it to a file. The `get` subcommand is used to obtain the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD) and save it to a file.
+This will show you the available subcommands, arguments and options. There are currently five subcommands available: `inspect`, `download`, `plot`, `report` and `compare`.
+The `inspect` subcommand is used to obtain the ligand quality data from the Protein Data Bank and save it to a file. The `download` subcommand is used to obtain the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD) and save it to a file.
 The `plot` subcommand is used to plot the obtained ligand quality data of one or more ligands across multiple PDB files.
+The `report` subcommand is used to generate a report of the ligand quality data for a single ligand across multiple PDB files. The `compare` subcommand is used to compare the ligand quality data of one or more datasets.
 
 ## :mag: Inspection mode
 The inspection mode is used to obtain the ligand quality data from the Protein Data Bank and save it to a file. The following command will inspect a single ligand in a PDB file and save the output to a yaml file:
@@ -103,11 +104,11 @@ here's an example of the ligand quality fo the ligand `4WI`, also known as Nirma
 
 <img src="/example_analyses/Nirmatrelvir/nirmatrelvir_quality.png" width="400">
 
-## :inbox_tray: Get mode
-The get mode is used to obtain the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD) and save it to a file. The following command will get the ideal 3D coordinates of a ligand and save it to a file:
+## :inbox_tray: Download mode
+The download mode is used to obtain the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD) and save it to a file. The following command will download the ideal 3D coordinates of a ligand and save it to a file:
 
 ```bash
-ligand_inspector get LIGAND_ID OUTPUT_FILE
+ligand_inspector download LIGAND_ID OUTPUT_FILE
 ```
 
 
@@ -199,9 +200,9 @@ yields the following output:
 
 ```yaml
 Atomic clashes: 0
-Atomic clashes evaluation: good
+Atomic clashes Evaluation: good
 Average occupancy: 1.0
-Average occupancy evaluation: good
+Average occupancy Evaluation: good
 Chain ID: A
 Identifier: 7TLL_4WI_A_401
 Ligand ID: 4WI
@@ -210,21 +211,20 @@ Model completeness: 1.0
 Outliers of bond angle: 5
 Outliers of bond length: 3
 PDB ID: 7TLL
-RMSZ-bond-angle: 1.23
-RMSZ-bond-angle evaluation: ok
-RMSZ-bond-length: 1.43
-RMSZ-bond-length evaluation: ok
+RMSZ Bond Angle: 1.23
+RMSZ Bond Angle Evaluation: ok
+RMSZ Bond Length: 1.43
+RMSZ Bond Length Evaluation: ok
 Ranking for geometry: 0.33
 Ranking for goodness of fit: 0.71
-Real space R factor: 0.09
-Real space R factor evaluation: good
-Real space correlation coefficient: 0.908
-Real space correlation coefficient evaluation: ok
-Stereochemical errors: 0
-Stereochemical errors evaluation: good
-Structural outliers: 8
-Structural outliers evaluation: ok
-overall evaluation: ok
+Real Space R-Factor: 0.09
+Real Space R-Factor Evaluation: good
+Real Space Correlation Coefficient: 0.908
+Real Space Correlation Coefficient Evaluation: ok
+Stereochemical Errors: 0
+Stereochemical Errors Evaluation: good
+Structural Outliers: 8
+Structural Outliers Evaluation: ok
 ```
 
 # :loudspeaker: Acknowledgements
