@@ -13,7 +13,7 @@ from itertools import product
 import rich
 from rich.console import Console
 from rich.table import Table
-from ligand_inspector.const import CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD, COLORS_RICH
+from ligand_inspector.const import *
 
 
 class ReportGenerator:
@@ -101,7 +101,6 @@ class ReportGenerator:
         Returns:
             tuple[pd.DataFrame, pd.DataFrame]: the across-metrics and single-metric summary tables.
         """
-        eval_columns = [c for c in self.input_data.columns if c.endswith("evaluation") and c != "overall evaluation"]
         categories = [CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD]
         total = len(self.input_data)
 
@@ -109,30 +108,30 @@ class ReportGenerator:
             percentage = (value / total * 100) if total else 0.0
             return f"{int(value)} ({percentage:.2f}%)"
 
-        row_labels = list(range(len(eval_columns) + 1))
-        row_labels += [f">={threshold}" for threshold in range(1, len(eval_columns) + 1)]
-        row_labels += [f"<={threshold}" for threshold in range(1, len(eval_columns) + 1)]
+        row_labels = list(range(len(EVAL_COLUMNS) + 1))
+        row_labels += [f">={threshold}" for threshold in range(1, len(EVAL_COLUMNS) + 1)]
+        row_labels += [f"<={threshold}" for threshold in range(1, len(EVAL_COLUMNS) + 1)]
 
         across_metrics_df = pd.DataFrame(index=row_labels, columns=categories, dtype=object)
-        across_metrics_df.index.name = "Number of evaluations"
+        across_metrics_df.index.name = f"Number of {EVAL_TERM_PLURAL}"
         across_metrics_df.columns.name = "Category"
 
         for category in categories:
-            is_category = self.input_data[eval_columns] == category
+            is_category = self.input_data[EVAL_COLUMNS] == category
             num_category_per_row = is_category.sum(axis=1)
 
-            for count in range(len(eval_columns) + 1):
+            for count in range(len(EVAL_COLUMNS) + 1):
                 value = int((num_category_per_row == count).sum())
                 across_metrics_df.loc[count, category] = format_count(value)
 
-            for threshold in range(1, len(eval_columns) + 1):
+            for threshold in range(1, len(EVAL_COLUMNS) + 1):
                 value_at_least = int((num_category_per_row >= threshold).sum())
                 value_at_most = int((num_category_per_row <= threshold).sum())
                 across_metrics_df.loc[f">={threshold}", category] = format_count(value_at_least)
                 across_metrics_df.loc[f"<={threshold}", category] = format_count(value_at_most)
 
-        single_metric_df = pd.DataFrame(index=eval_columns, columns=categories, dtype=object)
-        for col in eval_columns:
+        single_metric_df = pd.DataFrame(index=EVAL_COLUMNS, columns=categories, dtype=object)
+        for col in EVAL_COLUMNS:
             counts = self.input_data[col].value_counts().reindex(categories, fill_value=0).astype(int)
             for category in categories:
                 count = int(counts.get(category, 0))
@@ -156,8 +155,8 @@ class ReportGenerator:
 
         column_colors = COLORS_RICH
 
-        category_table = Table(title="Category distribution (number of evaluations)", show_lines=True)
-        category_table.add_column("Number of evaluations", style="bold")
+        category_table = Table(title=f"Category distribution (Number of {EVAL_TERM_PLURAL})", show_lines=True)
+        category_table.add_column(f"Number of {EVAL_TERM_PLURAL}", style="bold")
         for column in self.across_metrics_df.columns:
             category_table.add_column(str(column), justify="center", style=column_colors.get(str(column).lower(), "white"))
 
@@ -170,8 +169,8 @@ class ReportGenerator:
         console.print(category_table)
         console.print()
 
-        summary_table = Table(title="Evaluation summary (counts and percentages)", show_lines=True)
-        summary_table.add_column("Evaluation", style="bold")
+        summary_table = Table(title=f"{EVAL_TERM} summary (counts and percentages)", show_lines=True)
+        summary_table.add_column(EVAL_TERM, style="bold")
         for column in self.single_metric_df.columns:
             summary_table.add_column(str(column), justify="center", style=column_colors.get(str(column).lower(), "white"))
 

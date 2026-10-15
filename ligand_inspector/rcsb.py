@@ -98,7 +98,7 @@ class RCSBInterface:
         Returns:
             pd.DataFrame: A DataFrame containing the processed ligand quality data.
         """
-        logger.info("Processing the response data...")
+        logger.info("Wrangling the API response data...")
         processed_data = []
         key_map = {
             "Ranking for goodness of fit": "ranking_model_fit",
