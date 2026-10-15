@@ -35,13 +35,12 @@ def test_ligand_inspector_normal():
     assert isinstance(df.at[0, METRIC_AVG_OCCUPANCY], float)
     assert isinstance(df.at[0, "Number of bonds"], np.int64)
     assert isinstance(df.at[0, "Number of angles"], np.int64)
-    assert df.loc[0][f"{METRIC_RSCC} evaluation"] == "bad"
-    assert df.loc[0][f"{METRIC_RMSZ_BOND_LENGTH} evaluation"] == "good"
-    assert df.loc[0][f"{METRIC_RMSZ_BOND_ANGLE} evaluation"] == "good"
-    assert df.loc[0][f"{METRIC_STRUCTURAL_OUTLIERS} evaluation"] == "good"
-    assert df.loc[0][f"{METRIC_ATOMIC_CLASHES} evaluation"] == "good"
-    assert df.loc[0][f"{METRIC_STEREO_CHEMICAL_ERRORS} evaluation"] == "good"
-    assert df.loc[0]["overall evaluation"] == "bad"
+    assert df.loc[0][f"{METRIC_RSCC}{EVAL_SUFFIX}"] == "bad"
+    assert df.loc[0][f"{METRIC_RMSZ_BOND_LENGTH}{EVAL_SUFFIX}"] == "good"
+    assert df.loc[0][f"{METRIC_RMSZ_BOND_ANGLE}{EVAL_SUFFIX}"] == "good"
+    assert df.loc[0][f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}"] == "good"
+    assert df.loc[0][f"{METRIC_ATOMIC_CLASHES}{EVAL_SUFFIX}"] == "good"
+    assert df.loc[0][f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}"] == "good"
 
 
 def test_subject_of_investigation():

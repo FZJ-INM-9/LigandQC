@@ -1,4 +1,10 @@
-mkdir data
+#!/bin/bash
+
+# This script is meant to be run from the root of the repository
+cd example_analyses/Scarpino_dataset
+
+
+mkdir -p data
 cat > data/ligands.txt << EOFF
 MNO
 P10
@@ -429,3 +435,4 @@ ligand_inspector plot \
     data/scarpino_quality.png
 
 
+cd -

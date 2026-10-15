@@ -100,8 +100,10 @@ class RMSZInterpreter:
         Returns:
             dict: F-statistic, p-value, and test result.
         """
+
         # Calculate the F-statistic
-        var1 = (n / (n - 1)) * rmsz**2  # Variance of the first sample (RMSZ)
+        factor = (n / (n - 1)) if n > 1 else 2
+        var1 = factor * rmsz**2  # Variance of the first sample (RMSZ)
         var2 = (
             self.reference_std_dev**2
         )  # Variance of the second sample (reference std dev)

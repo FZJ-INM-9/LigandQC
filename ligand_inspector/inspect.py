@@ -139,28 +139,25 @@ class LigandInspector:
         """
 
         # evaluate the ligand
-        df[f"{METRIC_RSCC} evaluation"] = df.apply(
+        df[f"{METRIC_RSCC}{EVAL_SUFFIX}"] = df.apply(
             self.evaluate_rscc, axis=1
         )
-        df[f"{METRIC_RSR} evaluation"] = df.apply(
+        df[f"{METRIC_RSR}{EVAL_SUFFIX}"] = df.apply(
             self.evaluate_rsr_factor, axis=1
         )
-        df[f"{METRIC_STRUCTURAL_OUTLIERS} evaluation"] = df.apply(
+        df[f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}"] = df.apply(
             self.evaluate_structural_outliers, axis=1
         )
-        df[f"{METRIC_STEREO_CHEMICAL_ERRORS} evaluation"] = df.apply(
+        df[f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}"] = df.apply(
             self.evaluate_stereochemical_errors, axis=1
         )
-        df[f"{METRIC_AVG_OCCUPANCY} evaluation"] = df.apply(self.evaluate_occupancy, axis=1)
-        df[f"{METRIC_ATOMIC_CLASHES} evaluation"] = df.apply(self.evaluate_atomic_clashes, axis=1)
-        df[f"{METRIC_RMSZ_BOND_LENGTH} evaluation"] = df.apply(
+        df[f"{METRIC_AVG_OCCUPANCY}{EVAL_SUFFIX}"] = df.apply(self.evaluate_occupancy, axis=1)
+        df[f"{METRIC_ATOMIC_CLASHES}{EVAL_SUFFIX}"] = df.apply(self.evaluate_atomic_clashes, axis=1)
+        df[f"{METRIC_RMSZ_BOND_LENGTH}{EVAL_SUFFIX}"] = df.apply(
             self.evaluate_rmsz_bond_length, axis=1
         )
-        df[f"{METRIC_RMSZ_BOND_ANGLE} evaluation"] = df.apply(
+        df[f"{METRIC_RMSZ_BOND_ANGLE}{EVAL_SUFFIX}"] = df.apply(
             self.evaluate_rmsz_bond_angle, axis=1
-        )
-        df["overall evaluation"] = df.apply(
-            lambda row: self.overall_evaluation(row), axis=1
         )
 
         return df
@@ -273,21 +270,6 @@ class LigandInspector:
 
         raise ValueError(f"{METRIC_ATOMIC_CLASHES} value {row[METRIC_ATOMIC_CLASHES]} is not valid for evaluation.")
 
-    @staticmethod
-    def overall_evaluation(row):
-        """
-        evaluates the overall quality of the ligand
-        """
-        evaluation_columns = [i for i in row.index if "evaluation" in i]
-
-        if any([row[i] == CATEGORY_BAD for i in evaluation_columns]):
-            return CATEGORY_BAD
-
-        if any([row[i] == CATEGORY_OK for i in evaluation_columns]):
-            return CATEGORY_OK
-
-        return CATEGORY_GOOD
-
     def plot(self, df, filename):
         """
         creates plots of the inspection results using seaborn and matplotlib.
@@ -346,7 +328,6 @@ class LigandInspector:
         # axs[3,2].pie(pie_data_df["count"], labels=pie_data_df.index, autopct='%1.1f%%', startangle=90, counterclock=False)
         # axs[3,2].set_xlabel("Ligand occurence in PDB")
 
-        plt.tight_layout()
         plt.savefig(filename)
 
     def plot_evaluation_summary(self, ax, df, colors):
@@ -355,10 +336,10 @@ class LigandInspector:
         good/ok/bad evaluations for selected metrics.
         """
         evaluation_columns = [
-            (f"{METRIC_STRUCTURAL_OUTLIERS} evaluation", METRIC_STRUCTURAL_OUTLIERS),
-            (f"{METRIC_ATOMIC_CLASHES} evaluation", METRIC_ATOMIC_CLASHES),
-            (f"{METRIC_STEREO_CHEMICAL_ERRORS} evaluation", METRIC_STEREO_CHEMICAL_ERRORS),
-            (f"{METRIC_AVG_OCCUPANCY} evaluation", METRIC_AVG_OCCUPANCY),
+            (f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}", METRIC_STRUCTURAL_OUTLIERS),
+            (f"{METRIC_ATOMIC_CLASHES}{EVAL_SUFFIX}", METRIC_ATOMIC_CLASHES),
+            (f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}", METRIC_STEREO_CHEMICAL_ERRORS),
+            (f"{METRIC_AVG_OCCUPANCY}{EVAL_SUFFIX}", METRIC_AVG_OCCUPANCY),
         ]
         threshold_labels = {
             METRIC_STRUCTURAL_OUTLIERS: {
@@ -452,7 +433,7 @@ class LigandInspector:
             x=METRIC_RSR,
             binwidth=0.025,
             ax=ax,
-            hue=f"{METRIC_RSR} evaluation",
+            hue=f"{METRIC_RSR}{EVAL_SUFFIX}",
             hue_order=[CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD],
             multiple="stack",
             palette=colors,
@@ -469,7 +450,7 @@ class LigandInspector:
         # )
 
         self.update_legend(
-            ax, df, f"{METRIC_RSR} evaluation", f"{METRIC_RSR_SHORT} evaluation"
+            ax, df, f"{METRIC_RSR}{EVAL_SUFFIX}", f"{METRIC_RSR_SHORT} {EVAL_TERM}"
         )
 
     def update_legend(self, ax, df, key, new_title):
@@ -518,7 +499,7 @@ class LigandInspector:
             x=METRIC_RSCC,
             binwidth=0.025,
             ax=ax,
-            hue=f"{METRIC_RSCC} evaluation",
+            hue=f"{METRIC_RSCC}{EVAL_SUFFIX}",
             hue_order=[CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD],
             multiple="stack",
             palette=colors,
@@ -541,7 +522,7 @@ class LigandInspector:
         # )
 
         self.update_legend(
-            ax, df, f"{METRIC_RSCC} evaluation", f"Evaluation"
+            ax, df, f"{METRIC_RSCC}{EVAL_SUFFIX}", f"{EVAL_TERM}"
         )
 
     def plot_RMSZ_bond_length(self, ax, df, colors):
@@ -562,7 +543,7 @@ class LigandInspector:
             binwidth=0.2,
             binrange=(0, max(df[METRIC_RMSZ_BOND_LENGTH])),
             ax=ax,
-            hue=f"{METRIC_RMSZ_BOND_LENGTH} evaluation",
+            hue=f"{METRIC_RMSZ_BOND_LENGTH}{EVAL_SUFFIX}",
             hue_order=[CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD],
             multiple="stack",
             palette=colors,
@@ -572,7 +553,7 @@ class LigandInspector:
         ax.set_xlim(xmin=0, xmax=5)
 
         self.update_legend(
-            ax, df, f"{METRIC_RMSZ_BOND_LENGTH} evaluation", f"Evaluation"
+            ax, df, f"{METRIC_RMSZ_BOND_LENGTH}{EVAL_SUFFIX}", f"{EVAL_TERM}"
         )
 
     def plot_RMSZ_bond_angle(self, ax, df, colors):
@@ -593,7 +574,7 @@ class LigandInspector:
             binwidth=0.2,
             binrange=(0, max(df[METRIC_RMSZ_BOND_ANGLE])),
             ax=ax,
-            hue=f"{METRIC_RMSZ_BOND_ANGLE} evaluation",
+            hue=f"{METRIC_RMSZ_BOND_ANGLE}{EVAL_SUFFIX}",
             hue_order=[CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD],
             multiple="stack",
             palette=colors,
@@ -602,7 +583,7 @@ class LigandInspector:
         ax.set_ylabel("Count")
         ax.set_xlim(xmin=0, xmax=5)
         self.update_legend(
-            ax, df, f"{METRIC_RMSZ_BOND_ANGLE} evaluation", f"Evaluation"
+            ax, df, f"{METRIC_RMSZ_BOND_ANGLE}{EVAL_SUFFIX}", f"{EVAL_TERM}"
         )
 
     def plot_structural_outliers(self, ax, df, colors):
@@ -623,7 +604,7 @@ class LigandInspector:
             binwidth=2.5,
             binrange=(0, max(df[METRIC_STRUCTURAL_OUTLIERS])),
             ax=ax,
-            hue=f"{METRIC_STRUCTURAL_OUTLIERS} evaluation",
+            hue=f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}",
             multiple="stack",
             palette=colors,
         )
@@ -631,7 +612,7 @@ class LigandInspector:
         ax.set_ylabel("Count")
         ax.set_xlim(xmin=0, xmax=30)
         self.update_legend(
-            ax, df, f"{METRIC_STRUCTURAL_OUTLIERS} evaluation", f"Evaluation"
+            ax, df, f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}", f"{EVAL_TERM}"
         )
 
     def plot_atomic_clashes(self, ax, df, colors, order):
@@ -646,7 +627,7 @@ class LigandInspector:
             None
 
         """
-        pie_data = df.groupby(f"{METRIC_ATOMIC_CLASHES} evaluation").size()
+        pie_data = df.groupby(f"{METRIC_ATOMIC_CLASHES}{EVAL_SUFFIX}").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
         pie_data_df.loc[:, "color"] = pie_data_df.index.map(
@@ -682,7 +663,7 @@ class LigandInspector:
             None
 
         """
-        pie_data = df.groupby(f"{METRIC_STEREO_CHEMICAL_ERRORS} evaluation").size()
+        pie_data = df.groupby(f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
         pie_data_df.loc[:, "color"] = pie_data_df.index.map(
@@ -719,7 +700,7 @@ class LigandInspector:
         """
 
         # pie plot for the average occupancy
-        pie_data = df.groupby(f"{METRIC_AVG_OCCUPANCY} evaluation").size()
+        pie_data = df.groupby(f"{METRIC_AVG_OCCUPANCY}{EVAL_SUFFIX}").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
         pie_data_df.loc[:, "color"] = pie_data_df.index.map(
@@ -756,12 +737,9 @@ class LigandInspector:
             None
 
         """
-        evaluation_columns = [
-            i for i in df.columns if "evaluation" in i and "overall" not in i
-        ]
         pie_data_df = df.copy()
-        pie_data_df.loc[:, f"Count of '{category}' evaluations"] = (
-            pie_data_df[evaluation_columns].apply(
+        pie_data_df.loc[:, f"Count of '{category}' {EVAL_TERM_PLURAL}"] = (
+            pie_data_df[EVAL_COLUMNS].apply(
                 lambda x: (x == category).sum(), axis=1
             )
         )
@@ -769,7 +747,7 @@ class LigandInspector:
         p = ParetoPlot(pie_data_df)
         p.plot(
             ax,
-            f"Count of '{category}' evaluations",
+            f"Count of '{category}' {EVAL_TERM_PLURAL}",
             sort_by_category=True,
             ascending=not reverse,
             rotate_xticks=False,
