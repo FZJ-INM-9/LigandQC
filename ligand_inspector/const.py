@@ -1,4 +1,11 @@
+"""
+const
+=====
 
+This module contains constants used in the ligand inspector package, including categories, metrics, thresholds, and plotting colors. In addition, it provides functions to evaluate the quality of ligands based on these thresholds.
+
+
+"""
 # categories
 CATEGORY_GOOD = "good"
 CATEGORY_OK = "ok"

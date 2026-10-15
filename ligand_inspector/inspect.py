@@ -1,8 +1,10 @@
 """
-LigandInspector
-===============
+inspect
+=======
 
-This class is responsible for inspecting the quality of the specified ligand and PDB id.
+This module provides functionality to inspect the quality of ligands in PDB files. It includes the `LigandInspector` class, which is responsible for evaluating various metrics related to ligand quality.
+
+Its functionality is exposed to the command line via the `inspect` and `plot` subcommands, which take a file containing ligand IDs and an output directory as input, and generate inspection results and plots for the specified ligands.
 
 """
 
@@ -756,8 +758,14 @@ class LigandInspector:
 
 
 @click.command()
-@click.argument('input_file')
-@click.argument('output_file')
+@click.option('--input-file', '-i',
+              type=click.Path(exists=True),
+              required=True,
+              help="Path to the input file containing ligand IDs.")
+@click.option('--output-file', '-o',
+              type=click.Path(exists=False),
+              required=True,
+              help="Path to the output file where results will be saved.")
 @click.option('--only-chain', "-oc",
                 type=click.STRING,
                 help="If set, only the specified chain will be inspected.")
@@ -782,7 +790,7 @@ class LigandInspector:
               help="Path to the intermediate save file. If specified, the intermediate results will be saved to this file.")
 def inspect(input_file, output_file, only_chain, only_soi, logging_level, log_file, pdb_constraint_file, intermediate_save_file):
     """
-    Inspect a batch of ligands as specified in <INPUT_FILE>. The input file should be a .txt file that contains the ligand ids of the ligands that are supposed to be inspected. Make sure to put one ID per line. The results will be saved to <OUTPUT_FILE>. Supported formats are .csv, .xlsx, .json, .yaml, .html, and .txt.
+    Inspect a batch of ligands as specified in the input file. The input file should be a .txt file that contains the ligand ids of the ligands that are supposed to be inspected. Make sure to put one ID per line. The results will be saved to the output file. Supported formats are .csv, .xlsx, .json, .yaml, .html, and .txt.
     """
     setup_logger(log_file, logging_level)
     logger.info(f"Inspecting ligands in {input_file}")
@@ -848,5 +856,36 @@ def inspect(input_file, output_file, only_chain, only_soi, logging_level, log_fi
         click.echo("Unsupported file format. Please use .csv, .xlsx, .json, .yaml, .yml, .html or .txt.")
         return
 
+
+@click.command()
+@click.option('--input-file', '-i', 
+              type=click.Path(exists=True),
+              required=True,
+              help="Path to the input CSV file containing the ligand quality data (output of the inspect command).")
+@click.option('--output-file', '-o', 
+              required=True, 
+              type=click.Path(exists=False),
+              help="Path to the output file where the plot will be saved (e.g., .png, .jpg, .pdf).")
+def plot(input_file, output_file):
+    """
+    Plot the results from the input CSV file and save the plot to the specified output file.
+    """
+    logger.info(f"Plotting results from {input_file}...")
+    df = pd.read_csv(input_file)
+    li = LigandInspector()
+    li.plot(df, output_file)
+    logger.info(f"Plot saved to {output_file}")
+
+@click.group()
+def main():
+    """
+    Ligand Inspector CLI tool.
+    """
+    pass
+
+main.add_command(inspect)
+main.add_command(plot)
+
+
 if __name__ == "__main__":
-    inspect()
+    main()
