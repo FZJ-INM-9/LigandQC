@@ -1,3 +1,12 @@
+"""
+log
+===
+
+This module provides logging functionality for the ligand_inspector package. It sets up a logger that is used throughout the package to log messages at various levels (DEBUG, INFO, WARNING, ERROR, CRITICAL). The logger is configured to output messages to both the console and a log file, with customizable logging levels.
+
+"""
+
+
 import logging
 from rich.logging import RichHandler
 import click

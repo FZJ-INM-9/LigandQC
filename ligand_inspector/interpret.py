@@ -1,15 +1,9 @@
 """
-RMSZ
-====
+interpret
+=========
 
-RMSZ is a Python package to explore a rationale for categorizing the RMSZ value of bond lengths and angles in a ligand into the categories 'good', 'ok' and 'bad'.
-In this script, we will explore the RMSZ of a standard deviation by
-1) generating a dataset that adheres to a normal distribution with a given mean and standard deviation called "reference"
-2) calculating the mean and standard deviation of the dataset "reference"
-3) calculating the Z-score of each value in the dataset "reference"
-4) calculating the RMSZ of the dataset "reference"
-5) repeat steps 1-4 for 3 different datasets with the same mean but standard deviations of 0.5, 2.0 and 3.0, calculate the RMSZ with respect to the reference dataset
-6) plot the results
+The `interpret` module is a Python module to explore a rationale for categorizing the RMSZ value of bond lengths and angles in a ligand into the categories 'good', 'ok' and 'bad'.
+The rationale is based on the F-test, which compares the variance of the ligand's bond lengths or angles to a reference distribution with a known variance. The exact rationale is described in the documentation.
 
 """
 

@@ -1,5 +1,5 @@
 """
-Report
+report
 ======
 
 Report generation module for the ligand inspector. This module provides functionality to generate reports based on the analysis of ligand quality.
@@ -9,8 +9,6 @@ Report generation module for the ligand inspector. This module provides function
 import pandas as pd
 import os
 from pathlib import Path
-from itertools import product
-import rich
 from rich.console import Console
 from rich.table import Table
 from ligand_inspector.const import *

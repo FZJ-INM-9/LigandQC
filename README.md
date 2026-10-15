@@ -36,9 +36,8 @@ This is the solution to your problem. This tool will scrape the ligand quality d
 * Save the data to a csv file for further analysis
 * Create plots of the ligand quality data across multiple PDB files
 * Download the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD)
-
-> [!WARNING] :construction: Construction Warning :construction:
-> This project is under active development and is not yet ready for production use. The code is not fully tested and may contain bugs. Use at your own risk.
+* Generate a report of the ligand quality data for a single ligand across multiple PDB files
+* Compare the ligand quality data of one or more datasets
 
 # :inbox_tray: Installation
 To install the package, use one of the following methods.
@@ -170,8 +169,8 @@ Using a bisectional search, the treshold-RMSZ value is determined, below which n
 The size of the true population was chosen to be 1E7, which is large enough to be considered infinite compared to the number of bonds/angles typically found in a ligand which we assume to be in the range of 5-200.
 
 <p align="middle">
-    <img src="/docs/rmsz_categorization.png" width="400">
-    <img src="/docs/rmsz_ok_threshold.png" width="400">
+    <img src="/docs/source/_static/rmsz_categorization.png" width="400">
+    <img src="/docs/source/_static/rmsz_ok_threshold.png" width="400">
 </p>
 
 # :alembic: Examples
@@ -190,8 +189,8 @@ cat > pdb_ids.txt << EOF
 EOF
 
 ligand_inspector inspect \
-    ligand_ids.txt \
-    output.yaml \
+    -i ligand_ids.txt \
+    -o output.yaml \
     --pdb-constraint-file pdb_ids.txt \
     --only-chain "A"
 ```

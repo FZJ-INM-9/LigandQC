@@ -2,13 +2,15 @@
 compare
 =======
 
-This module allows for the comparison of two datasets containing ligand quality metrics. 
-It 
+This module allows for the comparison of two or three datasets containing ligand quality metrics. It provides various visualization and reporting features.
 
-* creates a venn diagram to visualize the overlap of ligands between the two datasets.
-* creates a comparative pareto plot of the metrics for the two datasets.
-* creates a table comparing the metrics for the two datasets.
-* export the comparisons to a folder in png, csv, and html formats.
+Features:
+* creates a venn diagram to visualize the overlap of ligands between the two/three datasets.
+* creates a comparative pareto plot of the metrics for the two/three datasets.
+* creates a table comparing the metrics for the two/three datasets.
+* creates an html report for the comparison of the two/three datasets, referencing the generated plots and tables.
+
+This functionality is exposed to the command line interface (CLI) through the `compare` subcommand.
 
 """
 
@@ -66,7 +68,7 @@ class DatasetComparison:
         self._create_comparison_tables(output_dir, format=table_format)
 
         # Export the comparison results to HTML
-        self._export_to_html(output_dir)
+        self._export_to_html(output_dir, img_format=img_format, table_format=table_format)
 
     def _create_venn_diagrams(self, output_dir: str, format: str = "png"):
         """
@@ -156,7 +158,7 @@ class DatasetComparison:
         comparison_table2.to_csv(file2, index=False)
         logger.info(f"Saved comparison table across metrics to {file2}")
 
-    def _export_to_html(self, output_dir: str):
+    def _export_to_html(self, output_dir: str, img_format: str = "png", table_format: str = "csv"):
         """
         Creates an HTML report for the comparison of the datasets, referencing the generated plots and tables.
 
@@ -175,15 +177,15 @@ class DatasetComparison:
         <body>
             <h1>Dataset Comparison Report</h1>
             <h2>Venn Diagrams</h2>
-            <img src="venn_diagram_ligand_ids.png" alt="Venn Diagram of Ligand ID Overlap" width="600">
-            <img src="venn_diagram_pdb_id_ligand_id_pairs.png" alt="Venn Diagram of PDB ID and Ligand ID Overlap" width="600">
+            <img src="venn_diagram_ligand_ids.{img_format}" alt="Venn Diagram of Ligand ID Overlap" width="600">
+            <img src="venn_diagram_pdb_id_ligand_id_pairs.{img_format}" alt="Venn Diagram of PDB ID and Ligand ID Overlap" width="600">
             <h2>Comparative Pareto Plots</h2>
-            <img src="comparative_pareto_plot_good.png" alt="Comparative Pareto Plot for Good Metrics" width="600">
-            <img src="comparative_pareto_plot_ok.png" alt="Comparative Pareto Plot for OK Metrics" width="600">
-            <img src="comparative_pareto_plot_bad.png" alt="Comparative Pareto Plot for Bad Metrics" width="600">
+            <img src="comparative_pareto_plot_good.{img_format}" alt="Comparative Pareto Plot for Good Metrics" width="600">
+            <img src="comparative_pareto_plot_ok.{img_format}" alt="Comparative Pareto Plot for OK Metrics" width="600">
+            <img src="comparative_pareto_plot_bad.{img_format}" alt="Comparative Pareto Plot for Bad Metrics" width="600">
             <h2>Comparison Tables</h2>
-            <a href="comparison_single_metric.csv">Download Comparison Table (Single Metric)</a><br>
-            <a href="comparison_across_metrics.csv">Download Comparison Table (Across Metrics)</a>
+            <a href="comparison_single_metric.{table_format}">Download Comparison Table (Single Metric)</a><br>
+            <a href="comparison_across_metrics.{table_format}">Download Comparison Table (Across Metrics)</a>
         </body>
         </html>
         """

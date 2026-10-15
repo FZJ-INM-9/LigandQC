@@ -1,6 +1,6 @@
 """
-LigandDownloader
-================
+download
+========
 
 This class is responsible for downloading ligand data from the RCSB PDB database.
 It downloads the idealized ligand in sdf format using asynchronous http requests.
@@ -8,15 +8,19 @@ For that it uses the api of rcsb.org, which downloads the ideal ligand sdf file 
 
 The API works as follows (on the example of ligands EOF and 4WI):
 
-.. code-block:: text
-    https://download.rcsb.org/batch/ccd/EOF_ideal.sdf:4WI_ideal.sdf
+First, a link is built to download the ideal sdf files of the ligands EOF and 4WI in a single zip file:
+https://download.rcsb.org/batch/ccd/EOF_ideal.sdf:4WI_ideal.sdf
 
 this downloads a zip file containing the ideal sdf files of the ligands EOF_ideal.sdf and 4WI_ideal.sdf.
-The zip file is then
+The zip file is then extracted to obtain the individual ideal sdf files.
+
+This functionality is exposed to the command line via the `download` command, which takes a file containing ligand IDs and an output directory as input, and downloads the corresponding ideal sdf files to the specified output directory.
+
 """
 
 import os
 import asyncio
+import click
 import aiohttp
 from .log import logger
 import tempfile
@@ -162,3 +166,46 @@ class LigandDownloader:
             list: A list of ideal ligand sdf file content as strings in the same order as ligand_ids.
         """
         return asyncio.run(self.download_multiple_ligands_async(ligand_ids))
+
+@click.command()
+@click.option('--ligand-id-file', '-i',
+              type=click.Path(exists=True),
+              required=True,
+              help="Path to the file containing the ligand IDs to download.")
+@click.option('--output-directory', '-o',
+              'output_directory',
+              type=click.Path(exists=False),
+              required=True,
+              help="Path to the output directory where the downloaded ligands will be saved.")
+def download(ligand_id_file, output_directory):
+    """
+    Download the ligands from the Cambridge Structural Database (CSD) based on the ligand IDs provided in the input file and save them to the specified output directory.
+    """
+    downloader = LigandDownloader()
+
+    with open(ligand_id_file, 'r') as f:
+        ligand_ids = f.read().splitlines()
+        ligand_ids = [ligand_id.strip() for ligand_id in ligand_ids]
+        while "" in ligand_ids:
+            ligand_ids.remove("")
+        
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    ligands = downloader.download_multiple_ligands(ligand_ids)
+
+    for ligand_data in ligands:
+        # Get the ligand ID from the data
+        if ligand_data is None:
+            continue
+        ligand_id = ligand_data.split()[0].strip()
+
+        ligand_file = os.path.join(output_directory, f"{ligand_id}.sdf")
+        with open(ligand_file, 'w') as f:
+            f.write(ligand_data)
+        logger.info(f"Downloaded {ligand_id} to {ligand_file}")
+
+    logger.info(f"Downloaded {len(ligand_ids)} ligands to {output_directory}")
+
+if __name__ == "__main__":
+    download()

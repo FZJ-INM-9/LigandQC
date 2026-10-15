@@ -1,0 +1,106 @@
+# Configuration file for the Sphinx documentation builder.
+#
+# For the full list of built-in configuration values, see the documentation:
+# https://www.sphinx-doc.org/en/master/usage/configuration.html
+
+# -- Project information -----------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath("../.."))
+sys.path.insert(0, os.path.abspath("../../ligand_inspector"))
+import importlib.metadata
+import pathlib
+import tomllib
+
+source_location = pathlib.Path(__file__).parent.parent.parent
+if (source_location / "pyproject.toml").exists():
+    with open(source_location / "pyproject.toml", "rb") as f:
+        __version__ = tomllib.load(f)["project"]["version"]
+else:
+    __version__ = importlib.metadata.version("package")
+
+
+project = "ligand_inspector"
+copyright = "2026, Christian Bergeest, Mercedes Alfonso-Prieto, Davide Mandelli, Andrea Rizzi, Giulia Rossetti"
+author = "Christian Bergeest, Mercedes Alfonso-Prieto, Davide Mandelli, Andrea Rizzi, Giulia Rossetti"
+release = __version__
+
+# -- General configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
+extensions = [
+    "myst_parser",
+    "sphinx.ext.todo",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinxcontrib.mermaid",
+    "sphinx_click",
+    "sphinx.ext.intersphinx",
+    # "sphinxcontrib.youtube",
+    "sphinxemoji.sphinxemoji",
+    "sphinx.ext.napoleon",
+    "sphinxcontrib.bibtex",
+    "sphinx_copybutton",
+    "sphinx.ext.extlinks",
+    "sphinx_design",
+]
+
+
+templates_path = ["_templates"]
+bibtex_bibfiles = ["_static/references.bib"]
+bibtex_reference_style = "super"
+exclude_patterns = []
+
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".txt": "markdown",
+    ".md": "markdown",
+}
+
+napoleon_google_docstring = True
+napoleon_include_init_with_doc = True
+napoleon_include_private_with_doc = False
+
+
+# -- Options for HTML output -------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+
+html_theme = "furo"
+html_static_path = ["_static"]
+html_title = "LIGAND_INSPECTOR Manual"
+html_logo = "_static/ligand_inspector_logo.png"
+
+
+html_css_files = [
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/fontawesome.min.css",
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/solid.min.css",
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/brands.min.css",
+]
+
+html_theme_options = {
+    "light_css_variables": {
+        "color-brand-primary": "#006f45",
+        "color-brand-content": "#006f45",
+    },
+    "dark_css_variables": {
+        "color-brand-primary": "#c57600",
+        "color-brand-content": "#c57600",
+    },
+    "footer_icons": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/brgstfzj/ligand_inspector",
+            "html": "",
+            "class": "fa-brands fa-solid fa-github fa-2x",
+        },
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/ligand_inspector/",
+            "html": "",
+            "class": "fa-solid fa-box fa-2x",
+        },
+    ],
+}

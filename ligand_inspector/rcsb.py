@@ -1,8 +1,8 @@
 """
-RCSBInterface
-=============
+rcsb
+====
 
-This module provides an interface to the RCSB PDB database for retrieving ligand information.
+This utility module provides an interface to the RCSB PDB database for retrieving ligand information.
 It handles all API calls and data processing.
 
 """
