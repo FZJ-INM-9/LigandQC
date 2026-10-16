@@ -22,8 +22,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import click
 import yaml
-import json
 import os
+import tempfile
+import shutil
+from pathlib import Path
 from ligandqc.const import *
 from ligandqc.interpret import RMSZInterpreter
 from ligandqc.download import LigandDownloader
@@ -88,7 +90,6 @@ class LigandInspector:
         ligand_ids=None,
         pdb_ids=None,
         only_chain=None,
-        intermediate_save=None,
         only_SOI=False,
     ):
         """
@@ -97,9 +98,7 @@ class LigandInspector:
         Args:
             ligand_ids (list[str]): A list of ligand IDs.
             pdb_ids (list[str]): A list of PDB IDs.
-            n_workers (int): The number of worker tasks to create.
             only_chain (str): If set, only the specified chain will be reported.
-            intermediate_save (str): The path to the intermediate save file. If None, the default is "intermediate.json".
             only_SOI (bool): If True, only the entries that are subject of investigation will be kept in the output file.
 
         Returns:
@@ -110,19 +109,7 @@ class LigandInspector:
         ligand_ids = list(set(ligand_ids)) if ligand_ids else None
         pdb_ids = list(set(pdb_ids)) if pdb_ids else None
 
-        data = interface.get_ligand_quality_data(ligand_ids=ligand_ids, pdb_ids=pdb_ids)
-
-        # intermediate save
-        if intermediate_save is None:
-            intermediate_save = "intermediate.json"
-
-        with open(intermediate_save, "w") as f:
-            json.dump(data, f, indent=4)
-
-        # process the data
-        self.df = interface.process_ligand_quality_data(
-            data, ligand_ids, pdb_ids=pdb_ids
-        )
+        self.df = interface.get_ligand_quality_data(ligand_ids=ligand_ids, pdb_ids=pdb_ids)
 
         self.df = self._filter_df(self.df, only_chain=only_chain, only_SOI=only_SOI)
 
@@ -786,11 +773,8 @@ class LigandInspector:
               type=click.Path(),
               default=None,
               help="Path to the PDB constraint file. If specified, the results will only show ligands in the specified PDB IDs. The file should contain one PDB ID per line.")
-@click.option("--intermediate-save-file", "-isf",
-              type=click.Path(exists=False),
-              default="intermediate_results.json",
-              help="Path to the intermediate save file. If specified, the intermediate results will be saved to this file.")
-def inspect(ligand_id_file, output_file, only_chain, only_soi, logging_level, log_file, pdb_constraint_file, intermediate_save_file):
+
+def inspect(ligand_id_file, output_file, only_chain, only_soi, logging_level, log_file, pdb_constraint_file):
     """
     Inspect a batch of ligands or PDB ids and reports their quality metrics and interpretations. You must provide either the ligand ID file or the PDB constraint file, or both. If none is provided, the inspection cannot proceed.
     """
@@ -827,7 +811,7 @@ def inspect(ligand_id_file, output_file, only_chain, only_soi, logging_level, lo
         pdb_ids = []
 
     li = LigandInspector()
-    results = li.inspect(ligand_ids=ligand_ids, pdb_ids=pdb_ids, only_chain=only_chain, intermediate_save=intermediate_save_file, only_SOI=only_soi)
+    results = li.inspect(ligand_ids=ligand_ids, pdb_ids=pdb_ids, only_chain=only_chain,only_SOI=only_soi)
     
     logger.info(f"Evaluating the provided data...")
     results = li.evaluate(results)
