@@ -33,7 +33,7 @@ class ReportGenerator:
         self.single_metric_df = None
         self.across_metrics_df = None
 
-    def generate_report(self, output_path: str):
+    def generate_report(self, output_path: str = "."):
         """
         Generates a report based on the input data and saves it to the specified output path.
 
