@@ -7,7 +7,8 @@ cat > pdb_ids.txt << EOF
 EOF
 
 ligandqc inspect \
-    --input-file ligand_ids.txt \
+    --ligand-id-file ligand_ids.txt \
     --output-file output.yaml \
     --pdb-constraint-file pdb_ids.txt \
-    --only-chain "A"
+    --only-chain "A" \
+    --only-SOI

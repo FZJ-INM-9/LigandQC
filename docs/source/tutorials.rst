@@ -69,7 +69,7 @@ In this case, we want to explore the quality of a single ligand occurance on a s
             EOF
 
             ligandqc inspect \
-                --input-file ligand_ids.txt \
+                --ligand-id-file ligand_ids.txt \
                 --output-file output.yaml \
                 --pdb-constraint-file pdb_ids.txt \
                 --only-chain "A" \
@@ -94,7 +94,7 @@ In this case, we want to explore the quality of a single ligand occurance on a s
 
             inspector = LigandInspector()
             df = inspector.inspect(
-                ligand_ids,
+                ligand_ids=ligand_ids,
                 pdb_ids=pdb_ids,
                 only_chain="A",
                 only_SOI=True,
@@ -102,7 +102,7 @@ In this case, we want to explore the quality of a single ligand occurance on a s
             df = inspector.evaluate(df)
 
             with open("output.yaml", "w") as f:
-                yaml.dumps(df.loc[0].to_dict())
+                yaml.dump(df.to_dict('records'), f)
 
 
 which returns this file:
@@ -131,13 +131,13 @@ For this tutorial, we investigate the quality of Nirmatrelvir (4WI) across all a
             EOF
 
             ligandqc inspect \
-                --input-file ligands.txt \
-                --output-file ligands_quality.csv \
+                --ligand-id-file ligands.txt \
+                --output-file quality.csv \
                 --only-SOI
-            
+
             ligandqc plot \
-                --input-file ligands_quality.csv \
-                --output-file ligands_quality.png
+                --input-file quality.csv \
+                --output-file quality.png
 
         The output file contains one row per ligand/PDB pair, with a column for each
         quality metric and the evaluation status for each metric.
@@ -152,12 +152,13 @@ For this tutorial, we investigate the quality of Nirmatrelvir (4WI) across all a
             ligand_ids = ["4WI"]
 
             inspector = LigandInspector()
-            df = inspector.inspect(ligand_ids, only_SOI=True)
+            df = inspector.inspect(ligand_ids=ligand_ids, 
+                                   only_SOI=True)
             df = inspector.evaluate(df)
 
-            df.to_csv("ligands_quality.csv", index=False)
+            df.to_csv("quality.csv", index=False)
 
-            inspector.plot(df, "ligands_quality.png")
+            inspector.plot(df, "quality.png")
 
         This is the main analysis loop used by the project.
 
@@ -166,9 +167,9 @@ so the generated data is
 
 .. card:: Generated Data
 
-    .. literalinclude:: ./_static/tutorial_files/tut2/ligands_quality.csv
+    .. literalinclude:: ./_static/tutorial_files/tut2/quality.csv
 
-    .. figure:: ./_static/tutorial_files/tut2/ligands_quality.png
+    .. figure:: ./_static/tutorial_files/tut2/quality.png
         :width: 600px
 
         Plot of ligand quality for Nirmatrelvir across different files in the PDB.
@@ -191,12 +192,15 @@ counts and percentages across all evaluation columns.
         .. code-block:: bash
 
             ligandqc report \
-                --input output.csv \
+                --input quality.csv \
                 --output terminal
 
+            ligandqc report \
+                --input quality.csv \
+                --output .
 
-        This prints a terminal summary table with the category distribution and the metric
-        breakdown, and the second command writes the report tables to disk.
+
+        This prints a summary table with the category distribution and the metric breakdown to the terminal, and the second command writes csv and html files containing the tables to the current directory.
 
     .. tab-item:: Python
         :sync: python
@@ -206,12 +210,12 @@ counts and percentages across all evaluation columns.
             import pandas as pd
             from ligandqc.report import ReportGenerator
 
-            df = pd.read_csv("output.csv")
+            df = pd.read_csv("quality.csv")
             report = ReportGenerator(df)
-            report.generate_report("report_output")
+            report.generate_report(".")
 
 
-which writes the following table to the terminal
+which writes the following table to the terminal and/or the current directory.
 
 .. card::
 
@@ -265,13 +269,28 @@ In such cases, we recommend to put the ``only_SOI`` flag, as otherwise, crystall
             pdb_ids = ["5REK", "5REJ", "7TLL"]
 
             inspector = LigandInspector()
-            df = inspector.inspect(None, pdb_ids=pdb_ids only_SOI=True)
+            df = inspector.inspect(pdb_ids=pdb_ids, only_SOI=True)
             df = inspector.evaluate(df)
 
-            df.to_csv("ligands_quality.csv", index=False)
+            df.to_csv("quality.csv", index=False)
 
-            inspector.plot(df, "ligands_quality.png")
+            inspector.plot(df, "quality.png")
 
+
+which should result in a file like this:
+
+.. card::
+
+    .. literalinclude:: ./_static/tutorial_files/tut3/quality.csv
+
+and a plot like this:
+
+.. card::
+
+    .. figure:: ./_static/tutorial_files/tut3/quality.png
+        :width: 600px
+
+        Plot of ligand quality for the dataset of PDB files.
 
 
 
@@ -302,24 +321,15 @@ A less common case where you would want to inspect the quality metrics of the en
                 --input-file quality.csv \
                 --output-file quality.png
     
-    .. tab-item:: Python
-        :sync: python
 
-        .. code-block:: python
+.. card::
 
-            ligandqc get-all-ids \
-                -ol ligands.txt \
-                -op pdb-ids.txt \
-                -om mapping.txt 
-            
-            ligandqc inspect \
-                --input-file ligands.txt \
-                --output-file quality.csv \
-                --only-SOI
-            
-            ligandqc plot \
-                --input-file quality.csv \
-                --output-file quality.png
+    .. figure:: ./_static/tutorial_files/tut4/quality.png
+        :width: 600px
+
+        Plot of ligand quality for the entire PDB.
+
+
 
 5. Download ligand coordinates
 ==============================
@@ -338,7 +348,7 @@ This is useful for structural inspection or downstream modeling work.
             echo 4WI > ligands.txt
 
             ligandqc download \
-                --input-file ligands.txt \
+                --ligand-id-file ligands.txt \
                 --output-directory .
 
         This saves a structure file for the requested ligand IDs to the current directory. In this case it's only the one of Nirmatrelvir.
@@ -353,7 +363,11 @@ This is useful for structural inspection or downstream modeling work.
             downloader = LigandDownloader()
             downloader.download_ligand("4WI", "4WI.sdf")
 
+which grabs the sdf file:
 
+.. card::
+
+    .. literalinclude:: ./_static/tutorial_files/tut5/4WI.sdf
 
 6. Compare multiple datasets
 ============================
@@ -438,7 +452,7 @@ Venn diagram of overlap, comparative Pareto plots, and summary tables. In this e
             comparison = DatasetComparison(df_a, df_b, labels=["dataset_a", "dataset_b"])
             comparison.compare_datasets("comparison_results")
 
-This will generate the following output plots
+This will generate the following output plots in the specified output directory.
 
 .. card::
     
