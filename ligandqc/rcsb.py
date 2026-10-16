@@ -32,10 +32,10 @@ class RCSBInterface:
         Retrieves all PDB IDs associated with a given ligand ID.
 
         Args:
-            ligand_id (list[str]): A list of ligand IDs to search for.
+            ligand_ids (list[str]): A list of ligand IDs to search for.
 
         Returns:
-            list: A list of PDB IDs associated with the ligand ID.
+            list: A list of PDB IDs associated with the ligand IDs.
         """
         logger.info(f"Fetching all PDB IDs for provided ligand_ids...")
         query = AttributeQuery(
@@ -47,7 +47,7 @@ class RCSBInterface:
         logger.info("Done fetching PDB IDs.")
         return results
 
-    def get_ligand_quality_data(self, ligand_ids, pdb_ids=None):
+    def get_ligand_quality_data(self, ligand_ids=None, pdb_ids=None):
         """
         Retrieves the ligand quality data for a given list of ligand IDs and PDB IDs.
         If PDB IDs are provided, only the data for those PDB IDs will be retrieved.
@@ -61,14 +61,24 @@ class RCSBInterface:
             list: A list of dictionaries containing the ligand quality data.
 
         """
+        # preprocessing input parameters
+        if ligand_ids is None:
+            if pdb_ids is None:
+                raise ValueError(
+                    "Either ligand_ids or pdb_ids must be provided to fetch ligand quality data."
+                )
+            ligand_ids = [] # technically, no ligand_ids must be set other than to get the PDB IDs, but since they are provided, we can leave them empty.
+
+
         if pdb_ids is None:
             logger.info("Fetching all PDB IDs for the given ligand IDs.")
-            pdb_ids = []
-            pdb_ids.extend(self.get_pdb_ids(ligand_ids))
+            pdb_ids = self.get_pdb_ids(ligand_ids)
 
         logger.info(
             f"Fetching ligand quality data for {len(ligand_ids)} ligand IDs and {len(pdb_ids)} PDB IDs..."
         )
+
+        # Fetch data in batches to avoid overwhelming the API
         data = []
         batch_size = 500
         n_batches = (len(pdb_ids) + batch_size - 1) // batch_size
@@ -89,14 +99,14 @@ class RCSBInterface:
 
         return data
 
-    def process_ligand_quality_data(self, data, ligand_ids, pdb_ids=None):
+    def process_ligand_quality_data(self, data, ligand_ids=None, pdb_ids=None):
         """
         Processes the ligand quality data retrieved from the RCSB PDB database.
 
         Args:
             data (list): A list of dictionaries containing the ligand quality data.
-            ligand_ids (list): A list of ligand IDs to filter the results by.
-            pdb_ids (list): A list of PDB IDs to filter the results by.
+            ligand_ids (list, optional): A list of ligand IDs to filter the results by. Defaults to None.
+            pdb_ids (list, optional): A list of PDB IDs to filter the results by. Defaults to None.
 
         Returns:
             pd.DataFrame: A DataFrame containing the processed ligand quality data.
@@ -182,8 +192,9 @@ class RCSBInterface:
                     processed_data.append(this_data)
         df = pd.DataFrame(processed_data)
         df = df.drop_duplicates()
-        df = df[df["Ligand ID"].isin(ligand_ids)]
-        if pdb_ids is not None:
+        if ligand_ids:
+            df = df[df["Ligand ID"].isin(ligand_ids)]
+        if pdb_ids:
             df = df[df["PDB ID"].isin(pdb_ids)]
         df = df.reset_index(drop=True)
         return df
