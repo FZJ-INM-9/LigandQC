@@ -6,7 +6,7 @@
 Contributors
 ============
 
-The following people have contributed to the development of `ligand_inspector`:
+The following people have contributed to the development of `ligandqc`:
 
 * Christian Bergeest (Lead Developer) [#fzj]_ [#rwth]_
 

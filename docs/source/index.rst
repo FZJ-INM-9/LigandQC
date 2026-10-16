@@ -1,13 +1,13 @@
-.. ligand_inspector documentation master file, created by
+.. ligandqc documentation master file, created by
    sphinx-quickstart on Tue May 12 14:06:04 2026.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
 ##############################################
-Welcome to **ligand_inspector** documentation!
+Welcome to **ligandqc** documentation!
 ##############################################
 
-**ligand_inspector** is a python package to inspect the quality metrics of single PDB files or a dataset of ligands.
+**ligandqc** is a python package to inspect the quality metrics of single PDB files or a dataset of ligands.
 
 |:sparkles:| Features
 

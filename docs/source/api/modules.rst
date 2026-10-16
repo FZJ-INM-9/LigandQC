@@ -1,7 +1,7 @@
-ligand_inspector
-================
+ligandqc
+========
 
 .. toctree::
    :maxdepth: 1
 
-   ligand_inspector
+   ligandqc

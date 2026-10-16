@@ -4,6 +4,6 @@
 References
 ==========
 
-The following publications are relevant to `ligand_inspector` and its underlying methods:
+The following publications are relevant to `ligandqc` and its underlying methods:
 
 ... to be added ...

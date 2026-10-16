@@ -4,24 +4,24 @@
 Tutorials
 =========
 
-Welcome to the `ligand_inspector` tutorials. This project is built to inspect the
+Welcome to the `ligandqc` tutorials. This project is built to inspect the
 quality of ligand structures against standard quality metrics, compare the outcome
 across datasets, and export useful summaries for downstream analysis.
 
 The project is organized around a few core modules:
 
-* :mod:`ligand_inspector.inspect` - fetches ligand-quality data and evaluates it
-* :mod:`ligand_inspector.download` - downloads the ideal ligand structure files
-* :mod:`ligand_inspector.report` - generates summary tables and export reports
-* :mod:`ligand_inspector.compare` - compares two or more datasets
-* :mod:`ligand_inspector.plot` - Venn and Pareto plotting helpers
+* :mod:`ligandqc.inspect` - fetches ligand-quality data and evaluates it
+* :mod:`ligandqc.download` - downloads the ideal ligand structure files
+* :mod:`ligandqc.report` - generates summary tables and export reports
+* :mod:`ligandqc.compare` - compares two or more datasets
+* :mod:`ligandqc.plot` - Venn and Pareto plotting helpers
 
 This tutorial covers the main workflow: inspect data, evaluate it, generate a
 report, and compare datasets.
 
 .. ATTENTION::
    Before starting, make sure the project is installed. See :doc:`installation`.
-   You can also check the CLI with ``ligand_inspector --help``.
+   You can also check the CLI with ``ligandqc --help``.
 
 
 Quick overview of the project
@@ -38,18 +38,19 @@ The code follows a simple pattern:
 
 The main public command-line entry points are:
 
-* ``ligand_inspector inspect``
-* ``ligand_inspector download``
-* ``ligand_inspector plot``
-* ``ligand_inspector report``
-* ``ligand_inspector compare``
+* ``ligandqc inspect``
+* ``ligandqc download``
+* ``ligandqc plot``
+* ``ligandqc report``
+* ``ligandqc compare``
 
 
-1. Inspect one ligand
-=====================
+1. Inspect the quality of a single ligand in a single pdb file
+==============================================================
 
-The core class is ``LigandInspector`` in :mod:`ligand_inspector.inspect`.
-It performs the data collection and metric evaluation.
+In this case, we want to explore the quality of a single ligand occurance on a specific protein chain in a known pdb file. The ``only_SOI`` flag makes sure that the ligand of the specified ID is "subject of interest". This can be important as there are several cases, where ligands are present in PDB files as a crystallization agent or for other reasons. This flag makes sure that the ligand in question was flagged by the publishers of the file as "subject of interest".
+
+
 
 .. tab-set::
     :sync-group: tutorial
@@ -67,11 +68,12 @@ It performs the data collection and metric evaluation.
             7TLL
             EOF
 
-            ligand_inspector inspect \
-                -i ligand_ids.txt \
-                -o output.yaml \
+            ligandqc inspect \
+                --input-file ligand_ids.txt \
+                --output-file output.yaml \
                 --pdb-constraint-file pdb_ids.txt \
-                --only-chain "A"
+                --only-chain "A" \
+                --only-SOI
 
         This fetches the relevant ligand-quality metrics, evaluates them, and saves the
         result to ``output.yaml``. Changing the output extension will switch the export
@@ -80,15 +82,18 @@ It performs the data collection and metric evaluation.
     .. tab-item:: Python
         :sync: python
 
+        The core class is ``LigandInspector`` in :mod:`ligandqc.inspect`.
+        It performs the data collection and metric evaluation.
+        
         .. code-block:: python
 
-            from ligand_inspector.inspect import LigandInspector
+            from ligandqc.inspect import LigandInspector
 
             ligand_ids = ["4WI"]
             pdb_ids = ["7TLL"]
 
             inspector = LigandInspector()
-            df = inspector.inspect_batch(
+            df = inspector.inspect(
                 ligand_ids,
                 pdb_ids=pdb_ids,
                 only_chain="A",
@@ -96,13 +101,11 @@ It performs the data collection and metric evaluation.
             )
             df = inspector.evaluate(df)
 
-            df.to_csv("output.yaml", index=False)
-
-        The resulting dataframe contains the raw metric values and evaluation columns such
-        as ``Real space R factor evaluation`` and ``overall evaluation``.
+            with open("output.yaml", "w") as f:
+                yaml.dumps(df.loc[0].to_dict())
 
 
-which returns this file
+which returns this file:
 
 .. card:: output yaml content
 
@@ -110,11 +113,10 @@ which returns this file
         :language: yaml
 
 
-2. Inspect a dataset with a plot
-================================
+2. Inspect the quality of a single ligand across all available PDB files
+========================================================================
 
-For larger studies, provide a multiple ligand IDs and optionally a PDB
-constraint file. For this tutorial, we investigate the quality of Nirmatrelvir across different files.
+For this tutorial, we investigate the quality of Nirmatrelvir (4WI) across all available files in the Protein Data Bank. Notice how there are no pdb files specified. If that is the case, ``ligandqc`` searches the protein databank for all PDB files that contain this ligand.
 
 .. tab-set::
     :sync-group: tutorial
@@ -128,14 +130,14 @@ constraint file. For this tutorial, we investigate the quality of Nirmatrelvir a
             4WI
             EOF
 
-            ligand_inspector inspect \
-                -i ligands.txt \
-                -o ligands_quality.csv \
+            ligandqc inspect \
+                --input-file ligands.txt \
+                --output-file ligands_quality.csv \
                 --only-SOI
             
-            ligand_inspector plot \
-                -i ligands_quality.csv \
-                -o ligands_quality.png
+            ligandqc plot \
+                --input-file ligands_quality.csv \
+                --output-file ligands_quality.png
 
         The output file contains one row per ligand/PDB pair, with a column for each
         quality metric and the evaluation status for each metric.
@@ -145,12 +147,12 @@ constraint file. For this tutorial, we investigate the quality of Nirmatrelvir a
 
         .. code-block:: python
 
-            from ligand_inspector.inspect import LigandInspector
+            from ligandqc.inspect import LigandInspector
 
             ligand_ids = ["4WI"]
 
             inspector = LigandInspector()
-            df = inspector.inspect_batch(ligand_ids, only_SOI=True)
+            df = inspector.inspect(ligand_ids, only_SOI=True)
             df = inspector.evaluate(df)
 
             df.to_csv("ligands_quality.csv", index=False)
@@ -176,7 +178,7 @@ so the generated data is
 Generate a report
 -----------------
 
-The report module in :mod:`ligand_inspector.report` converts the evaluated data
+The report module in :mod:`ligandqc.report` converts the evaluated data
 into summary tables. It is designed to produce a compact overview of the measure
 counts and percentages across all evaluation columns.
 
@@ -188,7 +190,7 @@ counts and percentages across all evaluation columns.
 
         .. code-block:: bash
 
-            ligand_inspector report \
+            ligandqc report \
                 --input output.csv \
                 --output terminal
 
@@ -202,7 +204,7 @@ counts and percentages across all evaluation columns.
         .. code-block:: python
 
             import pandas as pd
-            from ligand_inspector.report import ReportGenerator
+            from ligandqc.report import ReportGenerator
 
             df = pd.read_csv("output.csv")
             report = ReportGenerator(df)
@@ -216,7 +218,110 @@ which writes the following table to the terminal
     .. literalinclude:: ./_static/tutorial_files/tut2/terminal_output.txt
 
 
-3. Download ligand coordinates
+3. Inspect a dataset of PDB IDs where you don't know the ligand id
+==================================================================
+
+A very common case that can happen when authors do a redocking study and their published data does not contain the ligand information but only the PDB ids. Because it's apparently very clear which ligands they mean. (ficticious scenario).
+
+In that case, no ligand ids are provided, but the pdb ids instead must be.
+If none of the two are provided, the program will fail.
+
+In such cases, we recommend to put the ``only_SOI`` flag, as otherwise, crystallizing agents like DMS and ions or metals end up in the dataset.
+
+
+.. tab-set::
+    :sync-group: tutorial
+
+    .. tab-item:: CLI
+        :sync: cli
+
+        .. code-block:: bash
+
+            cat > pdb_ids.txt << EOF
+            5REK
+            7TLL
+            5REJ
+            EOF
+
+            ligandqc inspect \
+                --pdb-constraint-file pdb_ids.txt \
+                --output-file ligands_quality.csv \
+                --only-SOI
+            
+            ligandqc plot \
+                --input-file ligands_quality.csv \
+                --output-file ligands_quality.png
+
+        The output file contains one row per ligand/PDB pair, with a column for each
+        quality metric and the evaluation status for each metric.
+
+    .. tab-item:: Python
+        :sync: python
+
+        .. code-block:: python
+
+            from ligandqc.inspect import LigandInspector
+
+            pdb_ids = ["5REK", "5REJ", "7TLL"]
+
+            inspector = LigandInspector()
+            df = inspector.inspect(None, pdb_ids=pdb_ids only_SOI=True)
+            df = inspector.evaluate(df)
+
+            df.to_csv("ligands_quality.csv", index=False)
+
+            inspector.plot(df, "ligands_quality.png")
+
+
+
+
+4. Inspect the entire PDB
+=========================
+
+A less common case where you would want to inspect the quality metrics of the entire Protein Data Bank. Here, we first generate files containing all ligand ids and all pdb ids found in the RCSB, then we use the typical commands, that we already know.
+
+.. tab-set::
+    :sync-group: tutorial
+
+    .. tab-item:: CLI
+        :sync: cli
+
+        .. code-block:: bash
+
+            ligandqc get-all-ids \
+                -ol ligands.txt \
+                -op pdb-ids.txt \
+                -om mapping.txt 
+            
+            ligandqc inspect \
+                --input-file ligands.txt \
+                --output-file quality.csv \
+                --only-SOI
+            
+            ligandqc plot \
+                --input-file quality.csv \
+                --output-file quality.png
+    
+    .. tab-item:: Python
+        :sync: python
+
+        .. code-block:: python
+
+            ligandqc get-all-ids \
+                -ol ligands.txt \
+                -op pdb-ids.txt \
+                -om mapping.txt 
+            
+            ligandqc inspect \
+                --input-file ligands.txt \
+                --output-file quality.csv \
+                --only-SOI
+            
+            ligandqc plot \
+                --input-file quality.csv \
+                --output-file quality.png
+
+5. Download ligand coordinates
 ==============================
 
 The download command is used when you want the ideal 3D coordinates of a ligand.
@@ -232,9 +337,9 @@ This is useful for structural inspection or downstream modeling work.
 
             echo 4WI > ligands.txt
 
-            ligand_inspector download \
-                -i ligands.txt \
-                -o .
+            ligandqc download \
+                --input-file ligands.txt \
+                --output-directory .
 
         This saves a structure file for the requested ligand IDs to the current directory. In this case it's only the one of Nirmatrelvir.
 
@@ -243,14 +348,14 @@ This is useful for structural inspection or downstream modeling work.
 
         .. code-block:: python
 
-            from ligand_inspector.LigandDownloader import LigandDownloader
+            from ligandqc.LigandDownloader import LigandDownloader
 
             downloader = LigandDownloader()
             downloader.download_ligand("4WI", "4WI.sdf")
 
 
 
-4. Compare multiple datasets
+6. Compare multiple datasets
 ============================
 
 The compare workflow is designed for comparing two or more datasets. It creates a
@@ -302,17 +407,17 @@ Venn diagram of overlap, comparative Pareto plots, and summary tables. In this e
             8I7
             EOFF
 
-            ligand_inspector inspect \
-                -i dataset_a_ligand_ids.txt \
-                -o dataset_a_quality.csv \
+            ligandqc inspect \
+                --input-file dataset_a_ligand_ids.txt \
+                --output-file dataset_a_quality.csv \
                 --only-SOI
 
-            ligand_inspector inspect \
-                -i dataset_b_ligand_ids.txt \
-                -o dataset_b_quality.csv \
+            ligandqc inspect \
+                --input-file dataset_b_ligand_ids.txt \
+                --output-file dataset_b_quality.csv \
                 --only-SOI
 
-            ligand_inspector compare \
+            ligandqc compare \
                 dataset_a_quality.csv dataset_b_quality.csv \
                 --output-dir . \
                 --labels dataset_a,dataset_b
@@ -325,7 +430,7 @@ Venn diagram of overlap, comparative Pareto plots, and summary tables. In this e
         .. code-block:: python
 
             import pandas as pd
-            from ligand_inspector.compare import DatasetComparison
+            from ligandqc.compare import DatasetComparison
 
             df_a = pd.read_csv("dataset_a.csv")
             df_b = pd.read_csv("dataset_b.csv")
@@ -337,35 +442,35 @@ This will generate the following output plots
 
 .. card::
     
-    .. figure:: ./_static/tutorial_files/tut4/venn_diagram_ligand_ids.png
+    .. figure:: ./_static/tutorial_files/tut6/venn_diagram_ligand_ids.png
         :width: 300px
 
         Venn diagram comparison of dataset overlap for ligand ids only.
 
 .. card::
     
-    .. figure:: ./_static/tutorial_files/tut4/venn_diagram_pdb_id_ligand_id_pairs.png
+    .. figure:: ./_static/tutorial_files/tut6/venn_diagram_pdb_id_ligand_id_pairs.png
         :width: 300px
 
         Venn diagram comparison of dataset overlap for PDB id, ligand id pairs
 
 .. card::
     
-    .. figure:: ./_static/tutorial_files/tut4/comparative_pareto_plot_good.png
+    .. figure:: ./_static/tutorial_files/tut6/comparative_pareto_plot_good.png
         :width: 300px
 
         Comparative pareto plot for number of good evaluations.
 
 .. card::
     
-    .. figure:: ./_static/tutorial_files/tut4/comparative_pareto_plot_ok.png
+    .. figure:: ./_static/tutorial_files/tut6/comparative_pareto_plot_ok.png
         :width: 300px
 
         Comparative pareto plot for number of ok evaluations.
 
 .. card::
     
-    .. figure:: ./_static/tutorial_files/tut4/comparative_pareto_plot_bad.png
+    .. figure:: ./_static/tutorial_files/tut6/comparative_pareto_plot_bad.png
         :width: 300px
 
         Comparative pareto plot for number of bad evaluations.
