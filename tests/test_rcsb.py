@@ -20,10 +20,10 @@ class TestRCSBInterface:
         assert len(pdb_ids) > 0, "No PDB IDs returned"
         assert isinstance(pdb_ids, list), "Returned value is not a list"
 
-    def test_get_ligand_quality_data(self):
+    def test_query_ligand_quality_data(self):
         interface = RCSBInterface()
         ligand_id = "4WI"
-        data = interface.get_ligand_quality_data([ligand_id], pdb_ids=["7TLL"])
+        data = interface._query_ligand_quality_data(["7TLL"])
         assert isinstance(data, list), "Returned value is not a list"
         assert len(data) > 0, "No data returned"
         print(data)
@@ -69,6 +69,7 @@ class TestRCSBInterface:
     #     assert isinstance(processed_data, pd.DataFrame), "Returned value is not a DataFrame"
     #     assert not processed_data.empty, "Processed data is empty"
 
+    @pytest.mark.skip(reason="This test is skipped because it takes very long to run and is only meant to be run manually when needed.")
     def test_get_all_ligand_ids(self):
         interface = RCSBInterface()
         output_ligand_id_file = "tests/output_files/ligand_ids.txt"
