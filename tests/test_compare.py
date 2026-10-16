@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from ligand_inspector.compare import DatasetComparison
+from ligandqc.compare import DatasetComparison
 import os
 
 

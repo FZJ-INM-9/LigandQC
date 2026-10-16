@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from ligand_inspector.report import ReportGenerator
+from ligandqc.report import ReportGenerator
 import os
 
 class TestReport:

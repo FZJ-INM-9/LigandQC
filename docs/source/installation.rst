@@ -4,7 +4,7 @@
 Installation
 ============
 
-This page describes ways to install the `ligand_inspector` python package.
+This page describes ways to install the `ligandqc` python package.
 
 From scratch
 ============
@@ -16,7 +16,7 @@ Use this approach if you want a local development setup from source.
    .. code-block:: bash
 
       git clone <your-repository-url>
-      cd ligand_inspector
+      cd ligandqc
 
 2. Create and activate a virtual environment using the tool of your choice (e.g. micromamba or conda) with the basic dependencies (check out the mentioned file)
 
@@ -35,14 +35,14 @@ Use this approach if you want a local development setup from source.
 
    .. code-block:: bash
 
-      micromamba activate ligand_inspector
+      micromamba activate ligandqc
       enunciate --help
 
 
 Via package manager
 ===================
 
-Install `ligand_inspector` via a package manager.
+Install `ligandqc` via a package manager.
 
 Via pip
 -------
@@ -51,7 +51,7 @@ Install the latest released version:
 
 .. code-block:: bash
 
-   pip install ligand_inspector
+   pip install ligandqc
 
 Via poetry
 ----------

@@ -9,7 +9,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath("../.."))
-sys.path.insert(0, os.path.abspath("../../ligand_inspector"))
+sys.path.insert(0, os.path.abspath("../../ligandqc"))
 import importlib.metadata
 import pathlib
 import tomllib
@@ -22,7 +22,7 @@ else:
     __version__ = importlib.metadata.version("package")
 
 
-project = "ligand_inspector"
+project = "ligandqc"
 copyright = "2026, Christian Bergeest, Mercedes Alfonso-Prieto, Davide Mandelli, Andrea Rizzi, Giulia Rossetti"
 author = "Christian Bergeest, Mercedes Alfonso-Prieto, Davide Mandelli, Andrea Rizzi, Giulia Rossetti"
 release = __version__
@@ -71,7 +71,7 @@ napoleon_include_private_with_doc = False
 html_theme = "furo"
 html_static_path = ["_static"]
 html_title = "LIGAND_INSPECTOR Manual"
-html_logo = "_static/ligand_inspector_logo.png"
+html_logo = "_static/ligandqc_logo.png"
 
 
 html_css_files = [
@@ -92,13 +92,13 @@ html_theme_options = {
     "footer_icons": [
         {
             "name": "GitHub",
-            "url": "https://github.com/brgstfzj/ligand_inspector",
+            "url": "https://github.com/brgstfzj/ligandqc",
             "html": "",
             "class": "fa-brands fa-solid fa-github fa-2x",
         },
         {
             "name": "PyPI",
-            "url": "https://pypi.org/project/ligand_inspector/",
+            "url": "https://pypi.org/project/ligandqc/",
             "html": "",
             "class": "fa-solid fa-box fa-2x",
         },
