@@ -17,6 +17,7 @@ from tqdm.auto import tqdm
 from ligandqc.const import *
 import re
 from collections import defaultdict
+import json
 
 
 class RCSBInterface:
@@ -47,7 +48,7 @@ class RCSBInterface:
         logger.info("Done fetching PDB IDs.")
         return results
 
-    def get_ligand_quality_data(self, ligand_ids=None, pdb_ids=None):
+    def get_ligand_quality_data(self, ligand_ids=None, pdb_ids=None, batch_size=500, tmp_dir=None):
         """
         Retrieves the ligand quality data for a given list of ligand IDs and PDB IDs.
         If PDB IDs are provided, only the data for those PDB IDs will be retrieved.
@@ -79,39 +80,59 @@ class RCSBInterface:
         )
 
         # Fetch data in batches to avoid overwhelming the API
-        data = []
-        batch_size = 500
+        dfs = []
         n_batches = (len(pdb_ids) + batch_size - 1) // batch_size
         logger.info(f"Processing {n_batches} batches of PDB IDs.")
+        
         for batch in tqdm(batched(pdb_ids, batch_size), total=n_batches):
-            query = DataQuery(
-                input_type="entries",
-                input_ids=batch,
-                return_data_list=[
-                    "nonpolymer_entities.pdbx_entity_nonpoly.comp_id",
-                    "nonpolymer_entities.nonpolymer_entity_instances.rcsb_nonpolymer_entity_instance_container_identifiers",
-                    "nonpolymer_entities.nonpolymer_entity_instances.rcsb_nonpolymer_instance_validation_score",
-                    "exptl.method",
-                ],
-            )
-            query.exec()
-            data += query.get_response()["data"]["entries"]
 
-        return data
+            data = self._query_ligand_quality_data(batch)
 
-    def process_ligand_quality_data(self, data, ligand_ids=None, pdb_ids=None):
+            df = self._process_ligand_quality_data(data, ligand_ids=ligand_ids, pdb_ids=pdb_ids)
+
+            dfs.append(df)
+
+        df = pd.concat(dfs, ignore_index=True)
+
+        return df
+
+    def _query_ligand_quality_data(self, batch):
+        """
+        performs the data query for the ligand quality for a batch of pdb_ids
+
+        Args:
+            batch (list): list of pdb ids.
+
+        Returns:
+            data (list): response data
+        
+        """
+        query = DataQuery(
+            input_type="entries",
+            input_ids=batch,
+            return_data_list=[
+                "nonpolymer_entities.pdbx_entity_nonpoly.comp_id",
+                "nonpolymer_entities.nonpolymer_entity_instances.rcsb_nonpolymer_entity_instance_container_identifiers",
+                "nonpolymer_entities.nonpolymer_entity_instances.rcsb_nonpolymer_instance_validation_score",
+                "exptl.method",
+            ],
+        )
+        query.exec()
+        return query.get_response()["data"]["entries"]
+
+    def _process_ligand_quality_data(self, data, ligand_ids=None, pdb_ids=None):
         """
         Processes the ligand quality data retrieved from the RCSB PDB database.
 
         Args:
-            data (list): A list of dictionaries containing the ligand quality data.
+            data (list): A list of dictionaries containing the ligand quality data (output of the _query_ligand_quality_data function).
             ligand_ids (list, optional): A list of ligand IDs to filter the results by. Defaults to None.
             pdb_ids (list, optional): A list of PDB IDs to filter the results by. Defaults to None.
 
         Returns:
             pd.DataFrame: A DataFrame containing the processed ligand quality data.
         """
-        logger.info("Wrangling the API response data...")
+        # logger.info("Wrangling the API response data...")
         processed_data = []
         key_map = {
             "Ranking for goodness of fit": "ranking_model_fit",
