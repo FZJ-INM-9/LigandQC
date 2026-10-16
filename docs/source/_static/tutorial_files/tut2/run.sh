@@ -3,10 +3,10 @@ cat > ligands.txt << EOF
 EOF
 
 ligandqc inspect \
-    --input-file ligands.txt \
-    --output-file ligands_quality.csv \
+    --ligand-id-file ligands.txt \
+    --output-file quality.csv \
     --only-SOI
 
 ligandqc plot \
-    --input-file ligands_quality.csv \
-    --output-file ligands_quality.png
+    --input-file quality.csv \
+    --output-file quality.png
