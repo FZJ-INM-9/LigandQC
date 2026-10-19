@@ -58,8 +58,9 @@ class RMSZInterpreter:
             self.reference_std_dev,
             int(self.reference_dataset_size),
         )
-        self.ok_bad_threshold = 2.0
+        self.ok_bad_threshold = THRESH_RMSZ_BAD_UPPER
         self.precomputed_rmsz_thresholds = {None: 1.0}
+        self.mode =  "single-sided"
 
     def interpret_rmsz(self, n, rmsz):
         """
@@ -122,44 +123,66 @@ class RMSZInterpreter:
             "significant": significant,
         }
 
-    def find_rmsz_threshold(self, n, alpha=0.05):
+    
+    def find_rmsz_threshold(self, n, alpha=0.05, tol=1e-4):
+
+        rmsz_threshold = self.precomputed_rmsz_thresholds.get(n, None)
+        if rmsz_threshold is not None:
+            return rmsz_threshold
+
+        calculated_threshold = self._calculate_rmsz_threshold(n, alpha, tol, lb_start=1, ub_start=20)
+        self.precomputed_rmsz_thresholds[n] = calculated_threshold
+        return calculated_threshold
+
+        
+    def _calculate_rmsz_threshold(self, n, alpha=0.05, tol=1e-4, lb_start=1, ub_start=20):
         """
         Find the rmsz threshold for a given sample size n for the F-test to be significant using the bisection method.
 
         Args:
             n (int): Sample size.
             alpha (float): Significance level (default is 0.05).
+            tol (float): Tolerance for the bisection method (default is 1e-4).
 
         Returns:
             float: The rmsz threshold.
         """
-        rmsz_threshold = self.precomputed_rmsz_thresholds.get(n, None)
-        if rmsz_threshold is not None:
-            return rmsz_threshold
 
         # Initialize bisection method
-        rmsz_start = 3.0
-        rmsz_end = 1.01
         if n >= 13526:
             raise ValueError(
                 "Sample size n is too large. Please use a smaller sample size."
             )
 
         # Perform bisection method to find the rmsz threshold
-        rmsz_values = []
-        while rmsz_start - rmsz_end > 1e-6:
-            mid_rmsz = (rmsz_start + rmsz_end) / 2
-            result = self.perform_f_test(mid_rmsz, n, alpha)
+        lb = lb_start
+        ub = ub_start
+        lb_significant = self.perform_f_test(lb, n, alpha)["significant"]
+        ub_significant = self.perform_f_test(ub, n, alpha)["significant"]
 
-            if not result["significant"]:
-                rmsz_end = mid_rmsz
+        # accuracy determined by tol
+        while abs(ub - lb) > tol:
+            mid = (lb + ub) / 2
+            result = self.perform_f_test(mid, n, alpha)
+
+            # assign the new bound such that always lb_significant != ub_significant.
+            if result["significant"]:
+                if lb_significant:
+                    lb = mid
+                    lb_significant = result["significant"]
+                else:
+                    ub = mid
+                    ub_significant = result["significant"]
             else:
-                rmsz_start = mid_rmsz
-            rmsz_values.append(mid_rmsz)
+                if lb_significant:
+                    ub = mid
+                    ub_significant = result["significant"]
+                else:
+                    lb = mid
+                    lb_significant = result["significant"]
 
         # Save the result and return
-        rounded_value = round(mid_rmsz, 5)
-        self.precomputed_rmsz_thresholds[n] = rounded_value
+        rounded_value = round(mid, int(np.log10(1 / tol))-1)
         return rounded_value
 
     def plot_rationale_categorization(self, output_path=None, alpha=0.05):
@@ -296,13 +319,12 @@ class RMSZInterpreter:
             alpha=opacity,
             label=f"RMSZ {self.ok_bad_threshold}",
         )
-        axs[1].vlines(
-            [self.ok_bad_threshold, -self.ok_bad_threshold],
-            0,
-            0.5,
-            linestyles="dashed",
-            colors="black",
-        )
+        for i in [-self.ok_bad_threshold, self.ok_bad_threshold]:
+            axs[1].axvline(
+                x=i,
+                linestyle="dashed",
+                color="black",
+            )
         axs[1].set_xlim(-7, 7)
         axs[1].set_ylim([0, 0.5])
 
@@ -313,6 +335,249 @@ class RMSZInterpreter:
         labels[1] += f": {area_inters_1 * 100:.1f} %"
         labels[3] += f": {area_inters_2 * 100:.1f} %"
         axs[1].legend(handles, labels)
+        # axs[1].title('RMSZ Distribution Comparison')
+        plt.tight_layout()
+
+        if output_path:
+            plt.savefig(output_path)
+        else:
+            plt.show()
+
+
+
+class RMSZInterpreterDoubleSided(RMSZInterpreter):
+    def __init__(self):
+        self.reference_mean = 0
+        self.reference_std_dev = 1.0
+        self.reference_dataset_size = 1e7
+        self.reference_dataset = np.random.normal(
+            self.reference_mean,
+            self.reference_std_dev,
+            int(self.reference_dataset_size),
+        )
+        self.ok_bad_upper_threshold = THRESH_RMSZ_BAD_UPPER
+        self.ok_bad_lower_threshold = THRESH_RMSZ_BAD_LOWER
+        self.precomputed_rmsz_thresholds = {None: 1.0}
+
+    def interpret_rmsz(self, n, rmsz):
+        """
+        Interpret the RMSZ value of a distribution.
+
+        Parameters:
+            n (int): sample size
+            rmsz (float): The RMSZ value of the distribution.
+            mode (str): The mode of interpretation ("bond" or "angle").
+
+        Returns:
+            str: Interpretation of the RMSZ value.
+        """
+        rmsz_lower_threshold, rmsz_upper_threshold = self.find_rmsz_threshold(n)
+
+        if rmsz <= rmsz_upper_threshold and rmsz >= rmsz_lower_threshold:
+            return CATEGORY_GOOD
+        elif (rmsz < self.ok_bad_upper_threshold and rmsz > rmsz_upper_threshold):
+            return CATEGORY_OK
+        elif (rmsz > self.ok_bad_lower_threshold and rmsz < rmsz_lower_threshold):
+            return CATEGORY_OK
+        else:
+            return CATEGORY_BAD
+
+    def find_rmsz_threshold(self, n, alpha=0.05, tol=1e-4):
+        rmsz_threshold = self.precomputed_rmsz_thresholds.get(n, None)
+        if rmsz_threshold is not None:
+            return rmsz_threshold
+        
+        # If not precomputed, calculate thresholds
+        lower_threshold = self._calculate_rmsz_threshold(n, alpha, tol, lb_start=0.01, ub_start=1)
+        upper_threshold = self._calculate_rmsz_threshold(n, alpha, tol, lb_start=1, ub_start=20)
+
+        self.precomputed_rmsz_thresholds[n] = (lower_threshold, upper_threshold)
+        return (lower_threshold, upper_threshold)
+
+
+    def plot_rationale_categorization(self, output_path=None, alpha=0.05):
+        """
+        Plot the rationale for flagging ligands as 'good', 'ok', or 'bad' based on the topology and RMSZ value.
+
+        Args:
+            output_path (str): Path to save the plot. If None, the plot will be shown.
+            alpha (float): Significance level for the F-test (default is 0.05).
+
+        Returns:
+            None
+        """
+        n_values = range(2, 201)
+
+        rmsz_values = [self.find_rmsz_threshold(n, alpha=alpha) for n in n_values]
+        rmsz_values_upper = [rmsz[1] for rmsz in rmsz_values]
+        rmsz_values_lower = [rmsz[0] for rmsz in rmsz_values]
+
+        plt.figure(figsize=(7, 6))
+        plt.plot(n_values, rmsz_values_upper, label="RMSZ Upper Threshold", color="blue")
+        plt.plot(n_values, rmsz_values_lower, label="RMSZ Lower Threshold", color="green")
+
+        opacity = 0.3
+        plt.axhline(
+            y=self.ok_bad_upper_threshold,
+            color="red",
+            linestyle="--",
+            label=f"RMSZ = {self.ok_bad_upper_threshold}",
+        )
+        # color between the rmsz values and 4.0
+        plt.fill_between(
+            n_values,
+            y1=4.0,
+            y2=self.ok_bad_upper_threshold,
+            color=COLORS_MATPLOTLIB[CATEGORY_BAD],
+            alpha=opacity,
+            label=CATEGORY_BAD,
+        )
+        plt.fill_between(
+            n_values,
+            rmsz_values_upper,
+            self.ok_bad_upper_threshold,
+            where=(np.array(rmsz_values_upper) < self.ok_bad_upper_threshold),
+            color=COLORS_MATPLOTLIB[CATEGORY_OK],
+            alpha=opacity,
+            label=CATEGORY_OK,
+        )
+        # color between upper and lower thresholds
+        plt.fill_between(
+            n_values,
+            rmsz_values_upper,
+            rmsz_values_lower,
+            where=(np.array(rmsz_values_upper) > 0),
+            color=COLORS_MATPLOTLIB[CATEGORY_GOOD],
+            alpha=opacity,
+            label=CATEGORY_GOOD,
+        )
+
+        # color between the lower rmsz threshold and self.ok_bad_lower_threshold
+        plt.fill_between(
+            n_values,
+            rmsz_values_lower,
+            self.ok_bad_lower_threshold,
+            where=(np.array(rmsz_values_lower) > self.ok_bad_lower_threshold),
+            color=COLORS_MATPLOTLIB[CATEGORY_OK],
+            alpha=opacity,
+        )
+
+        # color below the lower rmsz threshold
+        lower_line = [min(self.ok_bad_lower_threshold, rmsz) for rmsz in rmsz_values_lower]
+
+        # fill below the lower line
+        plt.fill_between(
+            n_values,
+            0,
+            lower_line,
+            color=COLORS_MATPLOTLIB[CATEGORY_BAD],
+            alpha=opacity,
+        )
+
+        plt.ylim(0, self.ok_bad_upper_threshold + 0.99)
+        plt.xlim(0, 200)
+        plt.title("Rationale for flagging Ligands as 'Good', 'Ok', or 'Bad'")
+        plt.xlabel("Sample Size (n)")
+        plt.ylabel("RMSZ Threshold")
+        plt.legend()
+        plt.grid()
+        plt.tight_layout()
+        if output_path:
+            plt.savefig(output_path)
+        else:
+            plt.show()
+
+    def plot_rationale_ok_threshold(self, output_path=None):
+        """
+        Plot the rationale for flagging ligands as "ok" based on the topology and RMSZ value.
+
+        Args:
+            output_path (str): Path to save the plot. If None, the plot will be shown.
+
+        Returns:
+            None
+        """
+
+        fig, axs = plt.subplots(2, 2, figsize=(9, 9))
+        fig.suptitle(
+            f"Comparison of two Normal Distributions with RMSZ 1.0 and {self.ok_bad_upper_threshold} and {self.ok_bad_lower_threshold} respectively"
+        )
+
+        # common plot parameters
+        xlim = (-7, 7)
+        ylim = (0, 0.9)
+        opacity = 0.3
+
+        x = np.linspace(-7, 7, 1_000_000)
+        gaussian_ref = gaussian(x, self.reference_mean, self.reference_std_dev)
+
+        threshold_specs = [
+            (0, self.ok_bad_upper_threshold),
+            (1, self.ok_bad_lower_threshold),
+        ]
+
+        for col, threshold in threshold_specs:
+            gaussian_threshold = gaussian(x, self.reference_mean, threshold)
+            inters_x = np.minimum(gaussian_ref, gaussian_threshold)
+
+            # Full-distribution overlap
+            axs[0, col].plot(x, gaussian_ref, color="b", label="RMSZ 1.0")
+            axs[0, col].fill_between(x, gaussian_ref, 0, color="b", alpha=opacity)
+            axs[0, col].plot(x, gaussian_threshold, color="orange", label=f"RMSZ {threshold}")
+            axs[0, col].fill_between(x, gaussian_threshold, 0, color="orange", alpha=opacity)
+            axs[0, col].plot(x, inters_x, color="r")
+            axs[0, col].fill_between(
+                x,
+                inters_x,
+                0,
+                facecolor="none",
+                edgecolor="r",
+                hatch="xx",
+                label="intersection",
+            )
+            axs[0, col].set_xlim(xlim)
+            axs[0, col].set_ylim(ylim)
+
+            area_inters_x = np.trapezoid(inters_x, x)
+            handles, labels = axs[0, col].get_legend_handles_labels()
+            labels[2] += f": {area_inters_x * 100:.1f} %"
+            axs[0, col].legend(handles, labels)
+
+            # In-range overlap within +/- threshold
+            r = 2
+            x2 = np.array([xi for xi in x if abs(xi) <= r])
+            gaussian_ref_x2 = gaussian(x2, self.reference_mean, self.reference_std_dev)
+            gaussian_threshold_x2 = gaussian(x2, self.reference_mean, threshold)
+
+            axs[1, col].plot(x, gaussian_ref, color="b", label="RMSZ 1.0")
+            axs[1, col].fill_between(
+                x2, gaussian_ref_x2, 0, color="b", alpha=opacity, label="RMSZ 1.0"
+            )
+            axs[1, col].plot(x, gaussian_threshold, color="orange", label=f"RMSZ {threshold}")
+            axs[1, col].fill_between(
+                x2,
+                gaussian_threshold_x2,
+                0,
+                color="orange",
+                alpha=opacity,
+                label=f"RMSZ {threshold}",
+            )
+            for i in [-r, r]:
+                axs[1, col].axvline(
+                    x=i,
+                    linestyle="dashed",
+                    color="black",
+                )
+            axs[1, col].set_xlim(xlim)
+            axs[1, col].set_ylim(ylim)
+
+            area_inters_1 = np.trapezoid(gaussian_ref_x2, x2)
+            area_inters_2 = np.trapezoid(gaussian_threshold_x2, x2)
+
+            handles, labels = axs[1, col].get_legend_handles_labels()
+            labels[1] += f": {area_inters_1 * 100:.1f} %"
+            labels[3] += f": {area_inters_2 * 100:.1f} %"
+            axs[1, col].legend(handles, labels)
         # axs[1].title('RMSZ Distribution Comparison')
         plt.tight_layout()
 

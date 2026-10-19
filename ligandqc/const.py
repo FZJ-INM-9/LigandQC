@@ -66,46 +66,70 @@ EVAL_COLUMNS = [f"{metric}{EVAL_SUFFIX}" for metric in METRICS]
 THRESH_RSR_GOOD = 0.4
 THRESH_RSR_BAD = 0.4
 is_rsr_good = lambda rsr: rsr <= THRESH_RSR_GOOD
+is_rsr_ok = lambda rsr: False  # There is no "ok" category for RSR
 is_rsr_bad = lambda rsr: rsr > THRESH_RSR_BAD
 
 # Real Space Correlation Coefficient (RSCC)
 THRESH_RSCC_GOOD = 0.95
 THRESH_RSCC_BAD = 0.8
 is_rscc_good = lambda rscc: rscc >= THRESH_RSCC_GOOD
-is_rscc_ok = lambda rscc: THRESH_RSCC_BAD <= rscc < THRESH_RSCC_GOOD
+is_rscc_ok = lambda rscc: (rscc >= THRESH_RSCC_BAD) & (rscc < THRESH_RSCC_GOOD)
 is_rscc_bad = lambda rscc: rscc < THRESH_RSCC_BAD
 
 # RMSZ-bond-length and RMSZ-bond-angle
 # good and ok thresholds are not fix, will be determined in the RMSZInterpreter class.
-THRESH_RMSZ_BAD = 2.0
-is_rmsz_bad = lambda rmsz: rmsz > THRESH_RMSZ_BAD
+THRESH_RMSZ_BAD_UPPER = 2.0
+THRESH_RMSZ_BAD_LOWER = 0.5
 
 # Structural Outliers
 THRESH_STRUCTURAL_OUTLIERS_GOOD = 5
 THRESH_STRUCTURAL_OUTLIERS_BAD = 15
 is_structural_outliers_good = lambda outliers: outliers <= THRESH_STRUCTURAL_OUTLIERS_GOOD
-is_structural_outliers_ok = lambda outliers: THRESH_STRUCTURAL_OUTLIERS_GOOD < outliers <= THRESH_STRUCTURAL_OUTLIERS_BAD
+is_structural_outliers_ok = lambda outliers: (outliers > THRESH_STRUCTURAL_OUTLIERS_GOOD) & (outliers <= THRESH_STRUCTURAL_OUTLIERS_BAD)
 is_structural_outliers_bad = lambda outliers: outliers > THRESH_STRUCTURAL_OUTLIERS_BAD
 
 # Average occupancy
 THRESH_AVG_OCCUPANCY_GOOD = 0.95
 THRESH_AVG_OCCUPANCY_BAD = 0.5
 is_avg_occupancy_good = lambda occupancy: occupancy >= THRESH_AVG_OCCUPANCY_GOOD
-is_avg_occupancy_ok = lambda occupancy: THRESH_AVG_OCCUPANCY_BAD <= occupancy < THRESH_AVG_OCCUPANCY_GOOD
+is_avg_occupancy_ok = lambda occupancy: (occupancy >= THRESH_AVG_OCCUPANCY_BAD) & (occupancy < THRESH_AVG_OCCUPANCY_GOOD)
 is_avg_occupancy_bad = lambda occupancy: occupancy < THRESH_AVG_OCCUPANCY_BAD
 
 # Atomic clashes
 THRESH_ATOMIC_CLASHES_GOOD = 0
 THRESH_ATOMIC_CLASHES_BAD = 2
 is_atomic_clashes_good = lambda clashes: clashes <= THRESH_ATOMIC_CLASHES_GOOD
-is_atomic_clashes_ok = lambda clashes: THRESH_ATOMIC_CLASHES_GOOD < clashes <= THRESH_ATOMIC_CLASHES_BAD
+is_atomic_clashes_ok = lambda clashes: (clashes > THRESH_ATOMIC_CLASHES_GOOD) & (clashes <= THRESH_ATOMIC_CLASHES_BAD)
 is_atomic_clashes_bad = lambda clashes: clashes > THRESH_ATOMIC_CLASHES_BAD
 
 # Stereo-chemical errors
 THRESH_STEREO_CHEMICAL_ERRORS_GOOD = 0
 THRESH_STEREO_CHEMICAL_ERRORS_BAD = 0
 is_stereo_chemical_errors_good = lambda errors: errors <= THRESH_STEREO_CHEMICAL_ERRORS_GOOD
+is_stereo_chemical_errors_ok = lambda errors: False  # There is no "ok" category for stereo-chemical errors
 is_stereo_chemical_errors_bad = lambda errors: errors > THRESH_STEREO_CHEMICAL_ERRORS_BAD
+
+
+EVAL_FUNS = {
+    METRIC_RSR: {CATEGORY_GOOD: is_rsr_good, 
+                 CATEGORY_OK: is_rsr_ok, 
+                 CATEGORY_BAD: is_rsr_bad},
+    METRIC_RSCC: {CATEGORY_GOOD: is_rscc_good, 
+                  CATEGORY_OK: is_rscc_ok, 
+                  CATEGORY_BAD: is_rscc_bad},
+    METRIC_STRUCTURAL_OUTLIERS: {CATEGORY_GOOD: is_structural_outliers_good, 
+                                 CATEGORY_OK: is_structural_outliers_ok, 
+                                 CATEGORY_BAD: is_structural_outliers_bad},
+    METRIC_AVG_OCCUPANCY: {CATEGORY_GOOD: is_avg_occupancy_good, 
+                           CATEGORY_OK: is_avg_occupancy_ok, 
+                           CATEGORY_BAD: is_avg_occupancy_bad},
+    METRIC_ATOMIC_CLASHES: {CATEGORY_GOOD: is_atomic_clashes_good, 
+                            CATEGORY_OK: is_atomic_clashes_ok, 
+                            CATEGORY_BAD: is_atomic_clashes_bad},
+    METRIC_STEREO_CHEMICAL_ERRORS: {CATEGORY_GOOD: is_stereo_chemical_errors_good, 
+                                    CATEGORY_OK: is_stereo_chemical_errors_ok, 
+                                    CATEGORY_BAD: is_stereo_chemical_errors_bad},
+}
 
 # plotting
 COLORS_MATPLOTLIB = {
