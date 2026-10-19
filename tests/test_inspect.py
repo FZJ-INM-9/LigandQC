@@ -1,5 +1,6 @@
 import pytest
 from ligandqc.inspect import *
+from ligandqc.const import *
 import pandas as pd
 import numpy as np
 
@@ -141,3 +142,56 @@ def test_plot():
 #     file = "tests/input_files/EOF_ideal.sdf"
 #     mol = Chem.SDMolSupplier(file, removeHs=False)[0]
 #     inspector.visualize_bond_count(mol, "tests/output_files/EOF_bond_count.svg")
+
+def produce_artificial_data():
+    """
+    Produce artificial data for testing purposes. each call of this function yields one data dictionary with the following keys:
+    - METRIC_RSR
+    - METRIC_RSCC
+    - METRIC_RMSZ_BOND_LENGTH
+    - METRIC_RMSZ_BOND_ANGLE
+    - METRIC_STRUCTURAL_OUTLIERS
+    - METRIC_AVG_OCCUPANCY
+    - METRIC_ATOMIC_CLASHES
+    - METRIC_STEREO_CHEMICAL_ERRORS
+    - Number of bonds
+    - Number of angles
+    - PDB ID
+    - Ligand ID
+    The values of the metrics are randomly generated within reasonable bounds. The PDB ID and Ligand ID are generated as "1ABC_i" and "LIG_i" where i is a random integer. The number of bonds and angles are also randomly generated within reasonable bounds.
+    """
+
+    params = [
+		# metric, lb, ub, type
+		(METRIC_RSR, 0.0, 1.0, float),
+        (METRIC_RSCC, 0.0, 1.0, float),
+        (METRIC_RMSZ_BOND_LENGTH, 0.9, 3.0, float),
+        (METRIC_RMSZ_BOND_ANGLE, 0.9, 5.0, float),
+        (METRIC_STRUCTURAL_OUTLIERS, 0, 20, int),
+        (METRIC_AVG_OCCUPANCY, 0.0, 1.0, float),
+        (METRIC_ATOMIC_CLASHES, 0, 5, int),
+        (METRIC_STEREO_CHEMICAL_ERRORS, 0, 5, int),
+    ]
+    idx = 0
+    while True:
+        data = {}
+        for metric, lb, ub, typ in params:
+            if typ == float:
+                data[metric] = lb + (ub - lb) * np.random.rand()
+            elif typ == int:
+                data[metric] = np.random.randint(lb, ub + 1)
+        data["Number of bonds"] = np.random.randint(1, 100, 10)
+        data["Number of angles"] = np.random.randint(1, 100, 10)
+        data["PDB ID"] = [f"1ABC_{i}" for i in range(10)]
+        data["Ligand ID"] = [f"LIG_{i}" for i in range(10)]
+        yield data
+        idx += 1
+
+def test_produce_artificial_data():
+    """
+    Test the produce_artificial_data function.
+    """
+    generator = produce_artificial_data()
+    data = [next(generator) for _ in range(3)]
+    df = pd.DataFrame(data)
+    df.to_csv("tests/output_files/artificial_data.csv", index=False)
