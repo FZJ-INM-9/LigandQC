@@ -22,7 +22,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install poetry
-          poetry install --with docs --without dev
+          poetry install --with=docs --without=dev
       - name: build documentation
         run: make update_sphinx_documentation
           
