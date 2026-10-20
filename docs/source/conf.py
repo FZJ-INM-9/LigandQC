@@ -52,6 +52,7 @@ extensions = [
 templates_path = ["_templates"]
 bibtex_bibfiles = ["_static/references.bib"]
 bibtex_reference_style = "super"
+bibtex_default_style = 'unsrt'
 exclude_patterns = []
 
 source_suffix = {
@@ -70,8 +71,8 @@ napoleon_include_private_with_doc = False
 
 html_theme = "furo"
 html_static_path = ["_static"]
-html_title = "LIGAND_INSPECTOR Manual"
-html_logo = "_static/ligandqc_logo.png"
+html_title = "LigandQC Manual"
+html_logo = "_static/logo2.png"
 
 
 html_css_files = [
