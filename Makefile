@@ -8,3 +8,9 @@ open_sphinx_documentation:
 
 live_sphinx_documentation:
 	cd docs && make livehtml
+
+run_tests:
+	python -m pytest tests --maxfail=1 --disable-warnings
+
+run_tests_complete:
+	python -m pytest tests --disable-warnings
