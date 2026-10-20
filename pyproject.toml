@@ -6,6 +6,7 @@ authors = [
     {name = "c.bergeest",email = "c.bergeest@fz-juelich.de"}
 ]
 license = "MIT"
+license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
 dependencies = [
