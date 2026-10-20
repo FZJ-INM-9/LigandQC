@@ -23,6 +23,8 @@
   />
 </a>
 
+<img src="./docs/source/_static/logo2.png" width="400px" alt="LigandQC Logo" />
+
 # :mag: LigandQC - Ligand Quality Check
 
 In this project, we will scrape the ligand quality data from the Protein Data Bank using Python.
