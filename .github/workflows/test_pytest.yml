@@ -37,4 +37,6 @@ jobs:
       - name: Install dependencies
         run: poetry install --with=dev
       - name: Run tests
-        run: make run_tests
+        run: |
+          source ./.venv/bin/activate
+          make run_tests
