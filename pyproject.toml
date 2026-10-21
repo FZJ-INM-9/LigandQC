@@ -1,6 +1,6 @@
 [project]
 name = "ligandqc"
-version = "1.0.0"
+version = "1.0.1"
 description = "A python tool to check the quality of ligand structures from the Protein Data Bank."
 authors = [
     {name = "c.bergeest",email = "112690532+brgstfzj@users.noreply.github.com"}
