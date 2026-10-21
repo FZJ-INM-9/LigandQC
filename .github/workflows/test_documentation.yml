@@ -12,17 +12,31 @@ jobs:
     strategy:
       matrix:
         python-version: [3.12, 3.14, 3.15]
+    defaults:
+      run:
+        shell: bash
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+          allow-prereleases: true
+      - name: Install and configure Poetry
+        uses: abatilo/actions-poetry@v4
+      - name: Setup a local virtual environment
         run: |
-          python -m pip install --upgrade pip
-          pip install poetry
-          poetry install --with=docs --without=dev
-      - name: build documentation
-        run: make update_sphinx_documentation
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+      - uses: actions/cache@v3
+        name: Define a cache for the virtual environment based on the dependencies lock file
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install dependencies
+        run: poetry install --with=docs
+      - name: Build documentation
+        run: |
+          source ./.venv/bin/activate
+          make update_sphinx_documentation
           
