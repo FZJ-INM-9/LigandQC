@@ -2,6 +2,7 @@ import pytest
 
 from ligandqc.interpret import *
 
+
 class TestRMSZInterpreter:
 
     def test_rmsz_threshold_finding(self):

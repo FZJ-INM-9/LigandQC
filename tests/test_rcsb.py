@@ -1,7 +1,7 @@
+
 import pytest
+
 from ligandqc.rcsb import RCSBInterface
-import pandas as pd
-import json
 
 
 class TestRCSBInterface:
@@ -22,7 +22,7 @@ class TestRCSBInterface:
 
     def test_query_ligand_quality_data(self):
         interface = RCSBInterface()
-        ligand_id = "4WI"
+        # ligand_id = "4WI"
         data = interface._query_ligand_quality_data(["7TLL"])
         assert isinstance(data, list), "Returned value is not a list"
         assert len(data) > 0, "No data returned"
@@ -78,6 +78,6 @@ class TestRCSBInterface:
         mapping = interface.get_all_ids(output_ligand_id_file, output_pdb_id_file, output_mapping_file)
         assert isinstance(mapping, dict), "Returned value is not a dictionary"
         assert len(mapping) > 0, "Mapping is empty"
-        assert all(isinstance(k, str) for k in mapping.keys()), "Not all keys in mapping are strings"
+        assert all(isinstance(k, str) for k in mapping), "Not all keys in mapping are strings"
         assert all(v is not None for v in mapping.values()), "There are no None values in the mapping"
         

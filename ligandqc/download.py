@@ -18,14 +18,17 @@ This functionality is exposed to the command line via the `download` command, wh
 
 """
 
-import os
 import asyncio
-import click
-import aiohttp
-from .log import logger
+import os
 import tempfile
-from itertools import batched
 import zipfile
+from itertools import batched
+
+import aiofiles
+import aiohttp
+import click
+
+from ligandqc.log import logger
 
 
 class LigandDownloader:
@@ -47,8 +50,7 @@ class LigandDownloader:
             list: The URLs for downloading the ligand data in batches of 20 batches each.
         """
         urls = [
-            "https://download.rcsb.org/batch/ccd/"
-            + ":".join(f"{ligand_id}_ideal.sdf" for ligand_id in batch)
+            "https://download.rcsb.org/batch/ccd/" + ":".join(f"{ligand_id}_ideal.sdf" for ligand_id in batch)
             for batch in batched(ligand_ids, 20)
         ]
         return urls
@@ -77,8 +79,8 @@ class LigandDownloader:
                     # create temporary directory to store the zip file
                     tmp_dir = tempfile.mkdtemp()
                     tmp_file = os.path.join(tmp_dir, "ligands.zip")
-                    with open(tmp_file, "wb") as f:
-                        f.write(await response.read())
+                    async with aiofiles.open(tmp_file, "wb") as f:
+                        await f.write(await response.read())
 
                     # extract the zip file and read the sdf files
                     with zipfile.ZipFile(tmp_file, "r") as zip_ref:
@@ -88,16 +90,12 @@ class LigandDownloader:
                     sdf_contents = {}
                     for ligand_id in ligand_ids:
                         print(list(os.listdir(tmp_dir)))
-                        sdf_file = os.path.join(
-                            tmp_dir, f"{ligand_id.lower()}_ideal.sdf"
-                        )
+                        sdf_file = os.path.join(tmp_dir, f"{ligand_id.lower()}_ideal.sdf")
                         if os.path.exists(sdf_file):
-                            with open(sdf_file, "r") as f:
-                                sdf_contents[ligand_id] = f.read()
+                            async with aiofiles.open(sdf_file, "r") as f:
+                                sdf_contents[ligand_id] = await f.read()
                         else:
-                            logger.error(
-                                f"SDF file for ligand {ligand_id} not found in the zip archive."
-                            )
+                            logger.error(f"SDF file for ligand {ligand_id} not found in the zip archive.")
                             sdf_contents[ligand_id] = None
 
                     return sdf_contents
@@ -145,15 +143,10 @@ class LigandDownloader:
             list: A list of ideal ligand sdf file content as strings in the same order as ligand_ids.
         """
         async with aiohttp.ClientSession() as session:
-            tasks = [
-                self.download_ligands_async(ligand_id, session)
-                for ligand_id in ligand_ids
-            ]
+            tasks = [self.download_ligands_async(ligand_id, session) for ligand_id in ligand_ids]
             results = await asyncio.gather(*tasks)
             # extract the sdf content from the returned dictionaries
-            return [
-                res.get(ligand_id, None) for res, ligand_id in zip(results, ligand_ids)
-            ]
+            return [res.get(ligand_id, None) for res, ligand_id in zip(results, ligand_ids)]
 
     def download_multiple_ligands(self, ligand_ids):
         """
@@ -167,28 +160,35 @@ class LigandDownloader:
         """
         return asyncio.run(self.download_multiple_ligands_async(ligand_ids))
 
+
 @click.command()
-@click.option('--ligand-id-file', '-i',
-              type=click.Path(exists=True),
-              required=True,
-              help="Path to the file containing the ligand IDs to download.")
-@click.option('--output-directory', '-o',
-              'output_directory',
-              type=click.Path(exists=False),
-              required=True,
-              help="Path to the output directory where the downloaded ligands will be saved.")
+@click.option(
+    "--ligand-id-file",
+    "-i",
+    type=click.Path(exists=True),
+    required=True,
+    help="Path to the file containing the ligand IDs to download.",
+)
+@click.option(
+    "--output-directory",
+    "-o",
+    "output_directory",
+    type=click.Path(exists=False),
+    required=True,
+    help="Path to the output directory where the downloaded ligands will be saved.",
+)
 def download(ligand_id_file, output_directory):
     """
     Download the ligands from the Cambridge Structural Database (CSD) based on the ligand IDs provided in the input file and save them to the specified output directory.
     """
     downloader = LigandDownloader()
 
-    with open(ligand_id_file, 'r') as f:
+    with open(ligand_id_file, "r") as f:
         ligand_ids = f.read().splitlines()
         ligand_ids = [ligand_id.strip() for ligand_id in ligand_ids]
         while "" in ligand_ids:
             ligand_ids.remove("")
-        
+
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
@@ -201,11 +201,12 @@ def download(ligand_id_file, output_directory):
         ligand_id = ligand_data.split()[0].strip()
 
         ligand_file = os.path.join(output_directory, f"{ligand_id}.sdf")
-        with open(ligand_file, 'w') as f:
+        with open(ligand_file, "w") as f:
             f.write(ligand_data)
         logger.info(f"Downloaded {ligand_id} to {ligand_file}")
 
     logger.info(f"Downloaded {len(ligand_ids)} ligands to {output_directory}")
+
 
 if __name__ == "__main__":
     download()

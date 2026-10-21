@@ -1,8 +1,8 @@
+
 import numpy as np
 import pytest
-import pandas as pd
+
 from ligandqc.const import *
-from random import random
 
 
 def test_is_rsr_threshold_boundaries():
