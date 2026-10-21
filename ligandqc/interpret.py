@@ -7,9 +7,10 @@ The rationale is based on the F-test, which compares the variance of the ligand'
 
 """
 
-from scipy.stats import f
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import f
+
 from ligandqc.const import *
 
 
@@ -160,26 +161,27 @@ class RMSZInterpreter:
         lb_significant = self.perform_f_test(lb, n, alpha)["significant"]
         ub_significant = self.perform_f_test(ub, n, alpha)["significant"]
 
+        assert lb_significant != ub_significant, "Bisection method requires one bound to be significant and the other not."
+
         # accuracy determined by tol
         while abs(ub - lb) > tol:
             mid = (lb + ub) / 2
             result = self.perform_f_test(mid, n, alpha)
 
             # assign the new bound such that always lb_significant != ub_significant.
-            if result["significant"]:
-                if lb_significant:
-                    lb = mid
-                    lb_significant = result["significant"]
-                else:
-                    ub = mid
-                    ub_significant = result["significant"]
-            else:
-                if lb_significant:
-                    ub = mid
-                    ub_significant = result["significant"]
-                else:
-                    lb = mid
-                    lb_significant = result["significant"]
+            if (result["significant"] and lb_significant and not ub_significant) or \
+               (not result["significant"] and not lb_significant and ub_significant):
+                lb = mid
+                lb_significant = result["significant"]
+                continue
+            elif (result["significant"] and not lb_significant and ub_significant) or \
+                 (not result["significant"] and lb_significant and not ub_significant):
+                ub = mid
+                ub_significant = result["significant"]
+                continue
+
+
+            assert False, "Bisection method failed to converge. Please check the input parameters."
 
         # Save the result and return
         rounded_value = round(mid, int(np.log10(1 / tol))-1)
@@ -375,9 +377,7 @@ class RMSZInterpreterDoubleSided(RMSZInterpreter):
 
         if rmsz <= rmsz_upper_threshold and rmsz >= rmsz_lower_threshold:
             return CATEGORY_GOOD
-        elif (rmsz < self.ok_bad_upper_threshold and rmsz > rmsz_upper_threshold):
-            return CATEGORY_OK
-        elif (rmsz > self.ok_bad_lower_threshold and rmsz < rmsz_lower_threshold):
+        elif (rmsz < self.ok_bad_upper_threshold and rmsz > rmsz_upper_threshold) or (rmsz > self.ok_bad_lower_threshold and rmsz < rmsz_lower_threshold):
             return CATEGORY_OK
         else:
             return CATEGORY_BAD

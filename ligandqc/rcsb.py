@@ -7,17 +7,18 @@ It handles all API calls and data processing.
 
 """
 
-import click
-from rcsbapi.data import DataQuery, ALL_STRUCTURES
-from rcsbapi.search import AttributeQuery
-import pandas as pd
-from ligandqc.log import logger
-from itertools import batched
-from tqdm.auto import tqdm
-from ligandqc.const import *
 import re
 from collections import defaultdict
-import json
+from itertools import batched
+
+import click
+import pandas as pd
+from rcsbapi.data import ALL_STRUCTURES, DataQuery
+from rcsbapi.search import AttributeQuery
+from tqdm.auto import tqdm
+
+from ligandqc.const import *
+from ligandqc.log import logger
 
 
 class RCSBInterface:
@@ -38,7 +39,7 @@ class RCSBInterface:
         Returns:
             list: A list of PDB IDs associated with the ligand IDs.
         """
-        logger.info(f"Fetching all PDB IDs for provided ligand_ids...")
+        logger.info("Fetching all PDB IDs for provided ligand_ids...")
         query = AttributeQuery(
             attribute="rcsb_chem_comp_container_identifiers.comp_id",
             operator="in",
@@ -256,7 +257,7 @@ class RCSBInterface:
 
         ligand_id_pattern = re.compile(r"^[0-9A-Z]{3}$")
         invalid_ligand_ids = set()
-        mapping = defaultdict(lambda: [])
+        mapping = defaultdict(list)
         for i in entries_with_ligand:
             for j in i["nonpolymer_entities"]:
                 lig_id = j["pdbx_entity_nonpoly"]["comp_id"]
@@ -299,12 +300,12 @@ class RCSBInterface:
         logger.info(f"Exported {len(pdb_ids)} PDB IDs to {pdb_id_output_file}.")
 
         # export mapping
-        mapping_condensed = defaultdict(lambda: [])
+        mapping_condensed = defaultdict(list)
         for k, v in mapping.items():
             counter = defaultdict(lambda: 0)
             for i in v:
                 counter[i] += 1
-            for i in counter.keys():
+            for i in counter:
                 mapping_condensed[k].append(f"{i} ({counter[i]})")
         data = [{"Ligand ID": k, "PDB IDs": ";".join(sorted(v))} for k, v in mapping_condensed.items()]
         df = pd.DataFrame(data)

@@ -1,7 +1,10 @@
-import pytest
-import pandas as pd
-from ligandqc.report import ReportGenerator
 import os
+
+import pandas as pd
+import pytest
+
+from ligandqc.report import ReportGenerator
+
 
 class TestReport:
 

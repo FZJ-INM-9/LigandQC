@@ -1,8 +1,7 @@
-import pytest
 import matplotlib.pyplot as plt
-from ligandqc.plot import ParetoPlot
 import pandas as pd
-from random import choice
+
+from ligandqc.plot import ParetoPlot
 
 sample_data = []
 for label, n in zip("ABCDEF", [10, 20, 5, 15, 25, 30]):
@@ -20,7 +19,7 @@ class TestParetoPlot:
         pareto_plot = ParetoPlot(df)
 
         # Create a matplotlib axis
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         # Call the plot method
         pareto_plot.plot(
@@ -39,7 +38,7 @@ class TestParetoPlot:
         pareto_plot = ParetoPlot(df)
 
         # Create a matplotlib axis
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         # Call the plot method
         pareto_plot.plot(ax, column="Category", sort_by_category=True, ascending=True)
@@ -56,7 +55,7 @@ class TestParetoPlot:
         pareto_plot = ParetoPlot(df)
 
         # Create a matplotlib axis
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         # Call the plot method
         pareto_plot.plot(ax, column="Category", sort_by_category=True, ascending=False)
@@ -72,7 +71,7 @@ class TestParetoPlot:
         pareto_plot = ParetoPlot(df)
 
         # Create a matplotlib axis
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         # Call the plot method
         pareto_plot.plot(ax, column="Category", truncate=5)

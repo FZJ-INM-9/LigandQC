@@ -7,14 +7,15 @@ This utility module provides functionality for generating specific plots related
 """
 
 
-from typing import Optional, Sequence
-import pandas as pd
-import numpy as np
+from collections.abc import Sequence
+
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
-from matplotlib_venn import venn2, venn3
+import numpy as np
+import pandas as pd
 from matplotlib.lines import Line2D
-from ligandqc.const import NUM_METRICS
+from matplotlib_venn import venn2, venn3
+
 
 class VennPlot:
     def __init__(self, datasets, labels):
@@ -57,7 +58,7 @@ class ParetoPlot:
         self,
         ax,
         column: str,
-        truncate: int = None,
+        truncate: int | None = None,
         sort_by_category: bool = False,
         ascending: bool = True,
         add_axis_indicators: bool = False,
@@ -123,7 +124,7 @@ class ParetoPlot:
 
         # Customize primary axis
         ax.set_xlabel(column, fontsize=12)
-        ax.set_ylabel(f"Number of observations", fontsize=12, color="steelblue")
+        ax.set_ylabel("Number of observations", fontsize=12, color="steelblue")
         ax.tick_params(axis="y", labelcolor="steelblue")
         ax.set_xticks(range(len(value_counts)))
         ax.set_xticklabels(
@@ -183,7 +184,7 @@ class ParetoPlot:
                 "",
                 xytext=(bar_idx, 0.5 * bar_val),
                 xy=(bar_idx - arrow_len, 0.5 * bar_val),
-                arrowprops=dict(arrowstyle="-|>", color=bar_color_dark, lw=2),
+                arrowprops={"arrowstyle": "-|>", "color": bar_color_dark, "lw": 2},
                 zorder=10,
             )
 
@@ -196,7 +197,7 @@ class ParetoPlot:
                 "",
                 xytext=(line_idx, line_val),
                 xy=(line_idx + arrow_len, line_val),
-                arrowprops=dict(arrowstyle="-|>", color=line_color_dark, lw=2),
+                arrowprops={"arrowstyle": "-|>", "color": line_color_dark, "lw": 2},
                 zorder=10,
             )
 
@@ -207,7 +208,7 @@ class ParetoPlot:
 class ComparativeParetoPlot:
     def __init__(self, data: pd.DataFrame, dataset_column: str = "dataset"):
         """
-        Initializes the GroupedParetoPlot class with data.
+        Initializes the ComparativeParetoPlot class with data.
 
         Args:
             data (pd.DataFrame): Instance table containing the column of interest
@@ -223,13 +224,13 @@ class ComparativeParetoPlot:
         self,
         ax,
         column: str,
-        truncate: Optional[int] = None,
+        truncate: int | None = None,
         sort_by_category: bool = False,
         ascending: bool = True,
-        order_by: Optional[str] = None,
+        order_by: str | None = None,
         normalize: bool = False,
-        dataset_order: Optional[Sequence[str]] = None,
-        colors: Optional[Sequence] = None,
+        dataset_order: Sequence[str] | None = None,
+        colors: Sequence | None = None,
         rotate_xticks: bool = True,
     ):
         """

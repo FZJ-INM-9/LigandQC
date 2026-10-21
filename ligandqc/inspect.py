@@ -8,33 +8,30 @@ Its functionality is exposed to the command line via the `inspect` and `plot` su
 
 """
 
-import pandas as pd
-from rich.progress import (
-    Progress,
-    TextColumn,
-    BarColumn,
-    TaskProgressColumn,
-    MofNCompleteColumn,
-    TimeRemainingColumn,
-    track,
-)
-import matplotlib.pyplot as plt
-import seaborn as sns
-import click
-import yaml
 import os
-import tempfile
-import shutil
-from pathlib import Path
-from ligandqc.const import *
-from ligandqc.interpret import RMSZInterpreter
-from ligandqc.download import LigandDownloader
-from ligandqc.log import logger
-from ligandqc.rcsb import RCSBInterface
-from ligandqc.plot import ParetoPlot
-from ligandqc.log import *
 
-global CURRENT_ITEMS
+import click
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import yaml
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
+
+from ligandqc.const import *
+from ligandqc.download import LigandDownloader
+from ligandqc.interpret import RMSZInterpreter
+from ligandqc.log import *
+from ligandqc.log import logger
+from ligandqc.plot import ParetoPlot
+from ligandqc.rcsb import RCSBInterface
+
 CURRENT_ITEMS = []
 PROGRESS = Progress(
     TextColumn("[progress.description]{task.description}"),
@@ -331,28 +328,28 @@ class LigandInspector:
             (f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}", METRIC_STEREO_CHEMICAL_ERRORS),
             (f"{METRIC_AVG_OCCUPANCY}{EVAL_SUFFIX}", METRIC_AVG_OCCUPANCY),
         ]
-        threshold_labels = {
-            METRIC_STRUCTURAL_OUTLIERS: {
-                CATEGORY_GOOD: f"<= {THRESH_STRUCTURAL_OUTLIERS_GOOD}",
-                CATEGORY_OK: f"{THRESH_STRUCTURAL_OUTLIERS_GOOD + 1}-{THRESH_STRUCTURAL_OUTLIERS_BAD}",
-                CATEGORY_BAD: f"> {THRESH_STRUCTURAL_OUTLIERS_BAD}",
-            },
-            METRIC_ATOMIC_CLASHES: {
-                CATEGORY_GOOD: f"{THRESH_ATOMIC_CLASHES_GOOD}",
-                CATEGORY_OK: f"{THRESH_ATOMIC_CLASHES_GOOD + 1}-{THRESH_ATOMIC_CLASHES_BAD}",
-                CATEGORY_BAD: f"> {THRESH_ATOMIC_CLASHES_BAD}",
-            },
-            METRIC_STEREO_CHEMICAL_ERRORS: {
-                CATEGORY_GOOD: f"{THRESH_STEREO_CHEMICAL_ERRORS_GOOD}",
-                CATEGORY_OK: "N/A",
-                CATEGORY_BAD: f"> {THRESH_STEREO_CHEMICAL_ERRORS_BAD}",
-            },
-            METRIC_AVG_OCCUPANCY: {
-                CATEGORY_GOOD: f">= {THRESH_AVG_OCCUPANCY_GOOD}",
-                CATEGORY_OK: f"{THRESH_AVG_OCCUPANCY_BAD}-{THRESH_AVG_OCCUPANCY_GOOD}",
-                CATEGORY_BAD: f"< {THRESH_AVG_OCCUPANCY_BAD}",
-            },
-        }
+        # threshold_labels = {
+        #     METRIC_STRUCTURAL_OUTLIERS: {
+        #         CATEGORY_GOOD: f"<= {THRESH_STRUCTURAL_OUTLIERS_GOOD}",
+        #         CATEGORY_OK: f"{THRESH_STRUCTURAL_OUTLIERS_GOOD + 1}-{THRESH_STRUCTURAL_OUTLIERS_BAD}",
+        #         CATEGORY_BAD: f"> {THRESH_STRUCTURAL_OUTLIERS_BAD}",
+        #     },
+        #     METRIC_ATOMIC_CLASHES: {
+        #         CATEGORY_GOOD: f"{THRESH_ATOMIC_CLASHES_GOOD}",
+        #         CATEGORY_OK: f"{THRESH_ATOMIC_CLASHES_GOOD + 1}-{THRESH_ATOMIC_CLASHES_BAD}",
+        #         CATEGORY_BAD: f"> {THRESH_ATOMIC_CLASHES_BAD}",
+        #     },
+        #     METRIC_STEREO_CHEMICAL_ERRORS: {
+        #         CATEGORY_GOOD: f"{THRESH_STEREO_CHEMICAL_ERRORS_GOOD}",
+        #         CATEGORY_OK: "N/A",
+        #         CATEGORY_BAD: f"> {THRESH_STEREO_CHEMICAL_ERRORS_BAD}",
+        #     },
+        #     METRIC_AVG_OCCUPANCY: {
+        #         CATEGORY_GOOD: f">= {THRESH_AVG_OCCUPANCY_GOOD}",
+        #         CATEGORY_OK: f"{THRESH_AVG_OCCUPANCY_BAD}-{THRESH_AVG_OCCUPANCY_GOOD}",
+        #         CATEGORY_BAD: f"< {THRESH_AVG_OCCUPANCY_BAD}",
+        #     },
+        # }
         statuses = [CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD]
 
         summary_df = pd.DataFrame(
@@ -386,7 +383,7 @@ class LigandInspector:
                 if width < 5:
                     continue
                 center_x = left.iloc[idx] + width / 2
-                threshold_text = threshold_labels[label][status]
+                # threshold_text = threshold_labels[label][status]
                 ax.text(
                     center_x,
                     idx,
@@ -807,18 +804,18 @@ def inspect(ligand_id_file, output_file, only_chain, only_soi, logging_level, lo
             return
         logger.info(f"Found {len(pdb_ids)} PDB IDs in constraint file.")
     else:
-        logger.info(f"No PDB constraint file provided. Using all PDB IDs.")
+        logger.info("No PDB constraint file provided. Using all PDB IDs.")
         pdb_ids = []
 
     li = LigandInspector()
     results = li.inspect(ligand_ids=ligand_ids, pdb_ids=pdb_ids, only_chain=only_chain,only_SOI=only_soi)
     
-    logger.info(f"Evaluating the provided data...")
+    logger.info("Evaluating the provided data...")
     results = li.evaluate(results)
 
     # Save the results to the specified output file
     logger.info(f"Saving results to {output_file}...")
-    if output_file.endswith(".yaml") or output_file.endswith(".yml"):
+    if output_file.endswith((".yaml", ".yml")):
         with open(output_file, 'w') as f:
             yaml.dump(results.to_dict(orient='records'), f)
     elif output_file.endswith(".json"):
@@ -862,7 +859,6 @@ def main():
     """
     Ligand Inspector CLI tool.
     """
-    pass
 
 main.add_command(inspect)
 main.add_command(plot)
