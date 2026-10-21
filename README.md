@@ -27,19 +27,19 @@
 
 # :mag: LigandQC - Ligand Quality Check
 
-In this project, we will scrape the ligand quality data from the Protein Data Bank using Python.
-"Why?" you may ask? "Just look at the RCSB website report for the structure you're interested in, it's right there!" True, but what if you want to inspect the quality of a ligand across multiple PDB files? Or what if you want to inspect the quality of the ligands in a custom dataset of PDB files?
-This is the solution to your problem. This tool will scrape the ligand quality data from the Protein Data Bank and provide a summary of the quality of the ligand. The tool will also provide a way to save the data to a csv file for further analysis.
+LigandQC is a python based utility tool to check the quality of one or more ligands in protein structures. It provides a command line interface (CLI) with several subcommands to inspect, download, plot, report and compare the ligand quality data of one or more ligands across multiple PDB files.
+For more information, please refer to the [documentation](https://readthedocs.org/projects/ligandqc/).
+
 
 # :sparkles: Features
-* Scrape ligand quality data from the Protein Data Bank using a command line interface (CLI)
-* Filter for Subject of Interest (SOI) ligands in a PDB file
-* Filter for specific chains in a PDB file
-* Save the data to a csv file for further analysis
-* Create plots of the ligand quality data across multiple PDB files
-* Download the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD)
-* Generate a report of the ligand quality data for a single ligand across multiple PDB files
-* Compare the ligand quality data of one or more datasets
+* Scrape ligand quality data from the Protein Data Bank using a command line interface (CLI).
+* Filter for Subject of Interest (SOI) ligands in a PDB file.
+* Filter for specific chains in a PDB file.
+* Save the data to a csv file for further analysis.
+* Create plots of the ligand quality data across multiple PDB files.
+* Download the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD).
+* Generate a report of the ligand quality data for a single ligand across multiple PDB files.
+* Compare the ligand quality data of multiple datasets.
 
 # :inbox_tray: Installation
 To install the package, use one of the following methods.
@@ -48,16 +48,16 @@ To install the package, use one of the following methods.
 First, clone this repository:
 
 ```bash
-git clone https://jugit.fz-juelich.de/inm-9/ligand-quality-scraping.git
-cd ligand-quality-scraping
+git clone https://github.com/FZJ-INM-9/LigandQC.git
+cd LigandQC
 ```
 
 Then, create a new python virtual environment using your favorite tool and install the required packages.
 The following command will create a new virtual environment using micromamba and install the packages using poetry:
 
 ```bash
-micromamba create -n ligand_quality -c conda-forge python==3.12 poetry
-micromamba activate ligand_quality
+micromamba create -n ligandqc -c conda-forge python==3.12 poetry
+micromamba activate ligandqc
 poetry install
 ```
 
@@ -72,45 +72,74 @@ Once the virtual environment is activated, you can use the tool as follows:
 ligandqc --help
 ```
 
-This will show you the available subcommands, arguments and options. There are currently five subcommands available: `inspect`, `download`, `plot`, `report` and `compare`.
-The `inspect` subcommand is used to obtain the ligand quality data from the Protein Data Bank and save it to a file. The `download` subcommand is used to obtain the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD) and save it to a file.
-The `plot` subcommand is used to plot the obtained ligand quality data of one or more ligands across multiple PDB files.
-The `report` subcommand is used to generate a report of the ligand quality data for a single ligand across multiple PDB files. The `compare` subcommand is used to compare the ligand quality data of one or more datasets.
+This shows the available subcommands and options. The project currently exposes the following CLI commands via Click: `inspect`, `download`, `plot`, `report`, `compare`, and `get-all-ids`.
+
+Typical command patterns are:
+
+```bash
+ligandqc inspect --ligand-id-file ligand_ids.txt --output-file output.csv
+ligandqc download --ligand-id-file ligand_ids.txt --output-directory ./ligands
+ligandqc plot --input-file quality_data.csv --output-file quality_plot.png
+ligandqc report --input quality_data.csv --output terminal
+ligandqc compare --output-dir comparison_results dataset1.csv dataset2.csv
+ligandqc get-all-ids
+```
+
+The `inspect` subcommand reads ligand IDs from a text file and optionally filters by chain or by a list of PDB IDs. The `download` subcommand reads ligand IDs from a file and writes one `.sdf` structure per ligand to an output directory. The `plot` subcommand reads a CSV produced by `inspect` and saves a plot to disk. The `report` command generates a tabular or HTML report from the same CSV input. The `compare` subcommand compares one or more CSV datasets and writes comparison outputs to a directory. The `get-all-ids` command fetches the PDB mapping of ligand IDs and PDB IDs and writes the corresponding files.
+
+For more information on the available commands and options, please refer to the [documentation](https://readthedocs.org/projects/ligandqc/).
 
 ## :mag: Inspection mode
-The inspection mode is used to obtain the ligand quality data from the Protein Data Bank and save it to a file. The following command will inspect a single ligand in a PDB file and save the output to a yaml file:
+The inspection mode is used to obtain ligand quality data from the Protein Data Bank and save it to a file. The following command inspects a batch of ligands and writes the results to a YAML file:
 
 ```bash
-ligandqc inspect INPUT_FILE OUTPUT_FILE
+ligandqc inspect \
+    --ligand-id-file ligand_ids.txt \
+    --output-file output.yaml \
+    --pdb-constraint-file pdb_ids.txt \
+    --only-chain "A"
 ```
 
-The `INPUT_FILE` is a `.txt` file containing the three letter ligand ids (one per line) that you want to inspect. The `OUTPUT_FILE` is the path to the output file where the results will be saved. The output file can be `.csv`, `.xlsx`, `.json`, `.yaml`, `.html`, or `.txt`.
+The `--ligand-id-file` option points to a `.txt` file containing one three-letter ligand ID per line. The `--output-file` option sets the destination file. Supported output formats are `.csv`, `.xlsx`, `.json`, `.yaml`, `.yml`, `.html`, `.txt`, and `.md`.
 
 There are several options available to customize the inspection process:
-- `--only-chain`: Only inspect the specified chain in the PDB file. This option is useful if you want to inspect a specific chain in a multi-chain PDB file.
-- `--logging-level`: Set the logging level. The default is `INFO`, but you can set it to `DEBUG` or `WARNING` to see more or less output.
-- `--log-file`: Set the path to the log file. The default is `ligandqc.log`, but you can set it to any path you want.
-- `--pdb-constraint-file`: Set the path to a `.txt` file containing the PDB IDs of the ligands you want to inspect. This option is useful if you want to inspect only specific PDB files.
-- `--intermediate-save-file`: Set the path to a file where the intermediate results will be saved. This option is useful if you want to save intermediate results for long-running inspections.
+- `--only-chain`, `-oc`: Only inspect the specified chain in the PDB file.
+- `--only-SOI`, `-os`: Restrict the inspection to ligands flagged as Subject of Investigation.
+- `--logging-level`, `-ll`: Set the logging level. The default is `INFO`, with choices `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`.
+- `--log-file`, `-lf`: Set the path to the log file. The default is `ligandqc.log`.
+- `--pdb-constraint-file`, `-pcf`: Restrict the results to a `.txt` file with one PDB ID per line.
 
 ## :bar_chart: Plotting mode
-The plotting mode is used to plot the obtained ligand quality data of one or more ligands across multiple PDB files. The following command will plot the ligand quality data and save the output to a file:
+The plotting mode reads a ligand-quality CSV file and saves a plotted summary to disk. The command is:
 
 ```bash
-ligandqc plot INPUT_FILE OUTPUT_FILE
+ligandqc plot --input-file quality_data.csv --output-file quality_plot.png
 ```
-The `INPUT_FILE` is the path to the input file containing the ligand quality data (`.csv`-file obtained from the inspection mode). The `OUTPUT_FILE` is the path to the output file where the plot will be saved. The output file can be `.png`, or `.svg`.
 
-here's an example of the ligand quality fo the ligand `4WI`, also known as Nirmatrelvir, a protease inhibitor used in the treatment of COVID-19. As of 2025-05-05, 84 ligand quality entries are available in the PDB.
+The `--input-file` option expects the CSV output produced by the `inspect` command. The `--output-file` option can point to formats such as `.png`, `.svg`, or other formats supported by Matplotlib.
+
+Here's an example of the ligand quality for `4WI`, also known as Nirmatrelvir, a protease inhibitor used in the treatment of COVID-19. As of 2025-05-05, 84 ligand quality entries are available in the PDB.
 
 <img src="docs/source/_static/tutorial_files/tut2/ligands_quality.png" width="400">
 
 ## :inbox_tray: Download mode
-The download mode is used to obtain the ideal 3D coordinates of the ligand from the Cambridge Structural Database (CSD) and save it to a file. The following command will download the ideal 3D coordinates of a ligand and save it to a file:
+The download mode retrieves ideal 3D coordinates for ligands from the Cambridge Structural Database (CSD) and saves them as `.sdf` files in a target directory. The command is:
 
 ```bash
-ligandqc download LIGAND_ID OUTPUT_FILE
+ligandqc download --ligand-id-file ligand_ids.txt --output-directory ./ligands
 ```
+
+The file passed via `--ligand-id-file` contains one ligand ID per line. Each downloaded structure is written to the output directory as `LIGANDID.sdf`.
+
+## :clipboard: Reporting and comparison modes
+The project also includes helper commands for post-processing the inspection data:
+
+```bash
+ligandqc report --input quality_data.csv --output report.html
+ligandqc compare --output-dir comparison_results dataset1.csv dataset2.csv dataset3.csv
+```
+
+The `report` command generates a human-readable report from a CSV table, while `compare` compares multiple datasets and writes plots and tables to the specified output directory.
 
 
 # :brain: Rationale
@@ -191,8 +220,8 @@ cat > pdb_ids.txt << EOF
 EOF
 
 ligandqc inspect \
-    -i ligand_ids.txt \
-    -o output.yaml \
+    --ligand-id-file ligand_ids.txt \
+    --output-file output.yaml \
     --pdb-constraint-file pdb_ids.txt \
     --only-chain "A"
 ```
