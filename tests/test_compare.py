@@ -1,7 +1,9 @@
+import os
+
 import pandas as pd
 import pytest
+
 from ligandqc.compare import DatasetComparison
-import os
 
 
 class TestDatasetComparison:

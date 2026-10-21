@@ -12,5 +12,8 @@ live_sphinx_documentation:
 run_tests:
 	python -m pytest tests --maxfail=1 --disable-warnings
 
+lint:
+	ruff check
+
 run_tests_complete:
 	python -m pytest tests --disable-warnings

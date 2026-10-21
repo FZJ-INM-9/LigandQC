@@ -8,8 +8,9 @@ This module provides logging functionality for the ligandqc package. It sets up 
 
 
 import logging
-from rich.logging import RichHandler
+
 import click
+from rich.logging import RichHandler
 
 logger = logging.getLogger('ligandqc')
 if logger.hasHandlers():

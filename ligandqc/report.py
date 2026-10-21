@@ -6,11 +6,13 @@ Report generation module for the ligand inspector. This module provides function
 
 """
 
-import pandas as pd
 import os
 from pathlib import Path
+
+import pandas as pd
 from rich.console import Console
 from rich.table import Table
+
 from ligandqc.const import *
 
 
@@ -181,6 +183,7 @@ class ReportGenerator:
         console.print(summary_table)
 
 import click
+
 
 @click.command()
 @click.option('--output', '-o', required=True, help='Path to save the report (CSV or HTML), alternatively "terminal" for terminal output.')

@@ -18,14 +18,17 @@ This functionality is exposed to the command line via the `download` command, wh
 
 """
 
-import os
 import asyncio
-import click
-import aiohttp
-from .log import logger
+import os
 import tempfile
-from itertools import batched
 import zipfile
+from itertools import batched
+
+import aiofiles
+import aiohttp
+import click
+
+from ligandqc.log import logger
 
 
 class LigandDownloader:
@@ -77,8 +80,8 @@ class LigandDownloader:
                     # create temporary directory to store the zip file
                     tmp_dir = tempfile.mkdtemp()
                     tmp_file = os.path.join(tmp_dir, "ligands.zip")
-                    with open(tmp_file, "wb") as f:
-                        f.write(await response.read())
+                    async with aiofiles.open(tmp_file, "wb") as f:
+                        await f.write(await response.read())
 
                     # extract the zip file and read the sdf files
                     with zipfile.ZipFile(tmp_file, "r") as zip_ref:
@@ -92,8 +95,8 @@ class LigandDownloader:
                             tmp_dir, f"{ligand_id.lower()}_ideal.sdf"
                         )
                         if os.path.exists(sdf_file):
-                            with open(sdf_file, "r") as f:
-                                sdf_contents[ligand_id] = f.read()
+                            async with aiofiles.open(sdf_file, "r") as f:
+                                sdf_contents[ligand_id] = await f.read()
                         else:
                             logger.error(
                                 f"SDF file for ligand {ligand_id} not found in the zip archive."

@@ -16,13 +16,16 @@ This functionality is exposed to the command line interface (CLI) through the `c
 
 
 import os
-import pandas as pd
+
 import click
 import matplotlib.pyplot as plt
+import pandas as pd
+
 from ligandqc.const import *
-from ligandqc.plot import ComparativeParetoPlot, VennPlot
 from ligandqc.log import *
+from ligandqc.plot import ComparativeParetoPlot, VennPlot
 from ligandqc.report import ReportGenerator
+
 
 class DatasetComparison:
     """
@@ -44,8 +47,9 @@ class DatasetComparison:
         self.df.reset_index(inplace=True)
         self.df.drop(columns=["Index"], inplace=True)
 
-        for cat in CATEGORY_ORDER:
-            self.df[f"Count of '{cat}' {EVAL_TERM_PLURAL}"] = self.df.apply(lambda s: sum([1 if v == cat else 0 for v in s]), axis=1)
+        self.df.loc[:, f"Count of '{CATEGORY_GOOD}' {EVAL_TERM_PLURAL}"] = self.df.apply(lambda s: sum([1 if v == CATEGORY_GOOD else 0 for v in s]), axis=1)
+        self.df.loc[:, f"Count of '{CATEGORY_OK}' {EVAL_TERM_PLURAL}"] = self.df.apply(lambda s: sum([1 if v == CATEGORY_OK else 0 for v in s]), axis=1)
+        self.df.loc[:, f"Count of '{CATEGORY_BAD}' {EVAL_TERM_PLURAL}"] = self.df.apply(lambda s: sum([1 if v == CATEGORY_BAD else 0 for v in s]), axis=1)
         
 
     def compare_datasets(self, output_dir: str, img_format: str = "png", table_format: str = "csv", normalize: bool = False):
@@ -86,7 +90,7 @@ class DatasetComparison:
         venn_sets = [set(dataset['Ligand ID']) for dataset in self.datasets]
         venn_plot = VennPlot(venn_sets, self.labels)
 
-        fig, ax = plt.subplots(figsize=(8, 6))
+        _, ax = plt.subplots(figsize=(8, 6))
         venn_plot.plot(ax=ax)
         ax.set_title("Venn Diagram of Ligand ID Overlap")
         file = os.path.join(output_dir, f"venn_diagram_ligand_ids.{format}")
@@ -95,10 +99,10 @@ class DatasetComparison:
         logger.info(f"Saved Venn diagram to {file}")
 
         # create a Venn diagram for the overlap of 'PDB ID' and 'Ligand ID' pairs
-        venn_sets_pairs = [set([f"{pdb_id}_{ligand_id}" for pdb_id, ligand_id in zip(dataset['PDB ID'], dataset['Ligand ID'])]) for dataset in self.datasets]
+        venn_sets_pairs = [{f"{pdb_id}_{ligand_id}" for pdb_id, ligand_id in zip(dataset['PDB ID'], dataset['Ligand ID'])} for dataset in self.datasets]
         venn_plot_pairs = VennPlot(venn_sets_pairs, self.labels)
 
-        fig, ax = plt.subplots(figsize=(8, 6))
+        _, ax = plt.subplots(figsize=(8, 6))
         venn_plot_pairs.plot(ax=ax)
         ax.set_title("Venn Diagram of PDB ID and Ligand ID Overlap")
         file = os.path.join(output_dir, f"venn_diagram_pdb_id_ligand_id_pairs.{format}")
@@ -122,7 +126,7 @@ class DatasetComparison:
         pareto_plot = ComparativeParetoPlot(self.df, dataset_column="Dataset")
 
         for cat in CATEGORY_ORDER:
-            fig, ax = plt.subplots(figsize=(10, 6))
+            _, ax = plt.subplots(figsize=(10, 6))
             pareto_plot.plot(ax=ax, column=f"Count of '{cat}' {EVAL_TERM_PLURAL}", rotate_xticks=False, sort_by_category=True, ascending=False, normalize=normalize)
             file = os.path.join(output_dir, f"comparative_pareto_plot_{cat}.{format}")
             plt.savefig(file)

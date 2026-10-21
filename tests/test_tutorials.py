@@ -1,8 +1,10 @@
-import pytest
 import os
-from ligandqc.inspect import LigandInspector
-import yaml
+
 import pandas as pd
+import pytest
+import yaml
+
+from ligandqc.inspect import LigandInspector
 from ligandqc.report import ReportGenerator
 
 os.makedirs("tests/output_files/tutorials", exist_ok=True)
