@@ -27,8 +27,7 @@ from rich.progress import (
 from ligandqc.const import *
 from ligandqc.download import LigandDownloader
 from ligandqc.interpret import RMSZInterpreter
-from ligandqc.log import *
-from ligandqc.log import logger
+from ligandqc.log import logger, setup_logger
 from ligandqc.plot import ParetoPlot
 from ligandqc.rcsb import RCSBInterface
 
@@ -74,7 +73,7 @@ class LigandInspector:
 
         if only_SOI:
             # remove entries that are not subject of investigation
-            df = df[df["Is Subject of Investigation"] == True]
+            df = df[df["Is Subject of Investigation"]]
 
         # reset the index
         df = df.reset_index(drop=True)
@@ -126,26 +125,14 @@ class LigandInspector:
         """
 
         # evaluate the ligand
-        df[f"{METRIC_RSCC}{EVAL_SUFFIX}"] = df.apply(
-            self._evaluate_rscc, axis=1
-        )
-        df[f"{METRIC_RSR}{EVAL_SUFFIX}"] = df.apply(
-            self._evaluate_rsr_factor, axis=1
-        )
-        df[f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}"] = df.apply(
-            self._evaluate_structural_outliers, axis=1
-        )
-        df[f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}"] = df.apply(
-            self._evaluate_stereochemical_errors, axis=1
-        )
+        df[f"{METRIC_RSCC}{EVAL_SUFFIX}"] = df.apply(self._evaluate_rscc, axis=1)
+        df[f"{METRIC_RSR}{EVAL_SUFFIX}"] = df.apply(self._evaluate_rsr_factor, axis=1)
+        df[f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}"] = df.apply(self._evaluate_structural_outliers, axis=1)
+        df[f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}"] = df.apply(self._evaluate_stereochemical_errors, axis=1)
         df[f"{METRIC_AVG_OCCUPANCY}{EVAL_SUFFIX}"] = df.apply(self._evaluate_occupancy, axis=1)
         df[f"{METRIC_ATOMIC_CLASHES}{EVAL_SUFFIX}"] = df.apply(self._evaluate_atomic_clashes, axis=1)
-        df[f"{METRIC_RMSZ_BOND_LENGTH}{EVAL_SUFFIX}"] = df.apply(
-            self._evaluate_rmsz_bond_length, axis=1
-        )
-        df[f"{METRIC_RMSZ_BOND_ANGLE}{EVAL_SUFFIX}"] = df.apply(
-            self._evaluate_rmsz_bond_angle, axis=1
-        )
+        df[f"{METRIC_RMSZ_BOND_LENGTH}{EVAL_SUFFIX}"] = df.apply(self._evaluate_rmsz_bond_length, axis=1)
+        df[f"{METRIC_RMSZ_BOND_ANGLE}{EVAL_SUFFIX}"] = df.apply(self._evaluate_rmsz_bond_angle, axis=1)
 
         return df
 
@@ -153,17 +140,13 @@ class LigandInspector:
         """
         evaluates the RMSZ-bond-length of the ligand
         """
-        return self.rmsz_interpreter.interpret_rmsz(
-            row["Number of bonds"], row[METRIC_RMSZ_BOND_LENGTH]
-        )
+        return self.rmsz_interpreter.interpret_rmsz(row["Number of bonds"], row[METRIC_RMSZ_BOND_LENGTH])
 
     def _evaluate_rmsz_bond_angle(self, row):
         """
         evaluates the RMSZ-bond-angle of the ligand
         """
-        return self.rmsz_interpreter.interpret_rmsz(
-            row["Number of angles"], row[METRIC_RMSZ_BOND_ANGLE]
-        )
+        return self.rmsz_interpreter.interpret_rmsz(row["Number of angles"], row[METRIC_RMSZ_BOND_ANGLE])
 
     def _evaluate_rscc(self, row):
         """
@@ -176,7 +159,9 @@ class LigandInspector:
         if is_rscc_bad(row[METRIC_RSCC]):
             return CATEGORY_BAD
         if pd.isna(row[METRIC_RSCC]):
-            logger.warning(f"{METRIC_RSCC} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown.")
+            logger.warning(
+                f"{METRIC_RSCC} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown."
+            )
             return CATEGORY_UNKNOWN
 
         raise ValueError(f"{METRIC_RSCC} value {row[METRIC_RSCC]} is not valid for evaluation.")
@@ -190,7 +175,9 @@ class LigandInspector:
         if is_rsr_bad(row[METRIC_RSR]):
             return CATEGORY_BAD
         if pd.isna(row[METRIC_RSR]):
-            logger.warning(f"{METRIC_RSR} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown.")
+            logger.warning(
+                f"{METRIC_RSR} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown."
+            )
             return CATEGORY_UNKNOWN
 
         raise ValueError(f"{METRIC_RSR} value {row[METRIC_RSR]} is not valid for evaluation.")
@@ -206,10 +193,14 @@ class LigandInspector:
         if is_structural_outliers_bad(row[METRIC_STRUCTURAL_OUTLIERS]):
             return CATEGORY_BAD
         if pd.isna(row[METRIC_STRUCTURAL_OUTLIERS]):
-            logger.warning(f"{METRIC_STRUCTURAL_OUTLIERS} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown.")
+            logger.warning(
+                f"{METRIC_STRUCTURAL_OUTLIERS} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown."
+            )
             return CATEGORY_UNKNOWN
-        
-        raise ValueError(f"{METRIC_STRUCTURAL_OUTLIERS} value {row[METRIC_STRUCTURAL_OUTLIERS]} is not valid for evaluation.")
+
+        raise ValueError(
+            f"{METRIC_STRUCTURAL_OUTLIERS} value {row[METRIC_STRUCTURAL_OUTLIERS]} is not valid for evaluation."
+        )
 
     def _evaluate_stereochemical_errors(self, row):
         """
@@ -220,10 +211,14 @@ class LigandInspector:
         if is_stereo_chemical_errors_bad(row[METRIC_STEREO_CHEMICAL_ERRORS]):
             return CATEGORY_BAD
         if pd.isna(row[METRIC_STEREO_CHEMICAL_ERRORS]):
-            logger.warning(f"{METRIC_STEREO_CHEMICAL_ERRORS} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown.")
+            logger.warning(
+                f"{METRIC_STEREO_CHEMICAL_ERRORS} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown."
+            )
             return CATEGORY_UNKNOWN
 
-        raise ValueError(f"{METRIC_STEREO_CHEMICAL_ERRORS} value {row[METRIC_STEREO_CHEMICAL_ERRORS]} is not valid for evaluation.")
+        raise ValueError(
+            f"{METRIC_STEREO_CHEMICAL_ERRORS} value {row[METRIC_STEREO_CHEMICAL_ERRORS]} is not valid for evaluation."
+        )
 
     def _evaluate_occupancy(self, row):
         """
@@ -236,7 +231,9 @@ class LigandInspector:
         if is_avg_occupancy_bad(row[METRIC_AVG_OCCUPANCY]):
             return CATEGORY_BAD
         if pd.isna(row[METRIC_AVG_OCCUPANCY]):
-            logger.warning(f"{METRIC_AVG_OCCUPANCY} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown.")
+            logger.warning(
+                f"{METRIC_AVG_OCCUPANCY} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown."
+            )
             return CATEGORY_UNKNOWN
 
         raise ValueError(f"{METRIC_AVG_OCCUPANCY} value {row[METRIC_AVG_OCCUPANCY]} is not valid for evaluation.")
@@ -252,7 +249,9 @@ class LigandInspector:
         if is_atomic_clashes_bad(row[METRIC_ATOMIC_CLASHES]):
             return CATEGORY_BAD
         if pd.isna(row[METRIC_ATOMIC_CLASHES]):
-            logger.warning(f"{METRIC_ATOMIC_CLASHES} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown.")
+            logger.warning(
+                f"{METRIC_ATOMIC_CLASHES} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown."
+            )
             return CATEGORY_UNKNOWN
 
         raise ValueError(f"{METRIC_ATOMIC_CLASHES} value {row[METRIC_ATOMIC_CLASHES]} is not valid for evaluation.")
@@ -290,15 +289,9 @@ class LigandInspector:
         self._plot_evaluation_summary(fig.add_subplot(outer[1]), df, colors)
 
         # Row 3: pareto plots
-        self._plot_pareto(
-            fig.add_subplot(third_row[0, 0]), df, CATEGORY_BAD, colors, reverse=True
-        )
-        self._plot_pareto(
-            fig.add_subplot(third_row[0, 1]), df, CATEGORY_OK, colors, reverse=True
-        )
-        self._plot_pareto(
-            fig.add_subplot(third_row[0, 2]), df, CATEGORY_GOOD, colors, reverse=True
-        )
+        self._plot_pareto(fig.add_subplot(third_row[0, 0]), df, CATEGORY_BAD, colors, reverse=True)
+        self._plot_pareto(fig.add_subplot(third_row[0, 1]), df, CATEGORY_OK, colors, reverse=True)
+        self._plot_pareto(fig.add_subplot(third_row[0, 2]), df, CATEGORY_GOOD, colors, reverse=True)
 
         # # plot the histograms
         # sns.histplot(df, x="Ranking for goodness of fit", bins=n_bins,  ax=axs[3,0])
@@ -325,7 +318,10 @@ class LigandInspector:
         evaluation_columns = [
             (f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}", METRIC_STRUCTURAL_OUTLIERS),
             (f"{METRIC_ATOMIC_CLASHES}{EVAL_SUFFIX}", METRIC_ATOMIC_CLASHES),
-            (f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}", METRIC_STEREO_CHEMICAL_ERRORS),
+            (
+                f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}",
+                METRIC_STEREO_CHEMICAL_ERRORS,
+            ),
             (f"{METRIC_AVG_OCCUPANCY}{EVAL_SUFFIX}", METRIC_AVG_OCCUPANCY),
         ]
         # threshold_labels = {
@@ -352,15 +348,10 @@ class LigandInspector:
         # }
         statuses = [CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD]
 
-        summary_df = pd.DataFrame(
-            index=[label for _, label in evaluation_columns], columns=statuses
-        )
+        summary_df = pd.DataFrame(index=[label for _, label in evaluation_columns], columns=statuses)
 
         for col, label in evaluation_columns:
-            ratios = (
-                df[col].value_counts(normalize=True).reindex(statuses, fill_value=0)
-                * 100
-            )
+            ratios = df[col].value_counts(normalize=True).reindex(statuses, fill_value=0) * 100
             summary_df.loc[label, statuses] = ratios.values
 
         summary_df = summary_df.astype(float)
@@ -436,9 +427,7 @@ class LigandInspector:
         #     label=f"{METRIC_RSR_SHORT} threshold",
         # )
 
-        self._update_legend(
-            ax, df, f"{METRIC_RSR}{EVAL_SUFFIX}", f"{METRIC_RSR_SHORT} {EVAL_TERM}"
-        )
+        self._update_legend(ax, df, f"{METRIC_RSR}{EVAL_SUFFIX}", f"{METRIC_RSR_SHORT} {EVAL_TERM}")
 
     def _update_legend(self, ax, df, key, new_title):
         """
@@ -455,8 +444,7 @@ class LigandInspector:
 
         """
         ratios = {
-            i: round(len(df[df[key] == i]) / len(df) * 100, 1)
-            for i in [CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD]
+            i: round(len(df[df[key] == i]) / len(df) * 100, 1) for i in [CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD]
         }
         ax.get_legend().set_title(new_title)
         new_labels = {
@@ -467,7 +455,6 @@ class LigandInspector:
         for text in ax.get_legend().get_texts():
             text.set_text(new_labels.get(text.get_text(), text.get_text()))
 
-    
     def _plot_RSCC(self, ax, df, colors):
         """
         creates a histogram of the RSCC values.
@@ -508,9 +495,7 @@ class LigandInspector:
         #     label=f"{METRIC_RSCC_SHORT} threshold",
         # )
 
-        self._update_legend(
-            ax, df, f"{METRIC_RSCC}{EVAL_SUFFIX}", f"{EVAL_TERM}"
-        )
+        self._update_legend(ax, df, f"{METRIC_RSCC}{EVAL_SUFFIX}", f"{EVAL_TERM}")
 
     def _plot_RMSZ_bond_length(self, ax, df, colors):
         """
@@ -539,9 +524,7 @@ class LigandInspector:
         ax.set_ylabel("Count")
         ax.set_xlim(xmin=0, xmax=5)
 
-        self._update_legend(
-            ax, df, f"{METRIC_RMSZ_BOND_LENGTH}{EVAL_SUFFIX}", f"{EVAL_TERM}"
-        )
+        self._update_legend(ax, df, f"{METRIC_RMSZ_BOND_LENGTH}{EVAL_SUFFIX}", f"{EVAL_TERM}")
 
     def _plot_RMSZ_bond_angle(self, ax, df, colors):
         """
@@ -569,9 +552,7 @@ class LigandInspector:
         ax.set_xlabel(METRIC_RMSZ_BOND_ANGLE)
         ax.set_ylabel("Count")
         ax.set_xlim(xmin=0, xmax=5)
-        self._update_legend(
-            ax, df, f"{METRIC_RMSZ_BOND_ANGLE}{EVAL_SUFFIX}", f"{EVAL_TERM}"
-        )
+        self._update_legend(ax, df, f"{METRIC_RMSZ_BOND_ANGLE}{EVAL_SUFFIX}", f"{EVAL_TERM}")
 
     def _plot_structural_outliers(self, ax, df, colors):
         """
@@ -598,9 +579,7 @@ class LigandInspector:
         ax.set_xlabel(METRIC_STRUCTURAL_OUTLIERS)
         ax.set_ylabel("Count")
         ax.set_xlim(xmin=0, xmax=30)
-        self._update_legend(
-            ax, df, f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}", f"{EVAL_TERM}"
-        )
+        self._update_legend(ax, df, f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}", f"{EVAL_TERM}")
 
     def _plot_atomic_clashes(self, ax, df, colors, order):
         """
@@ -617,9 +596,7 @@ class LigandInspector:
         pie_data = df.groupby(f"{METRIC_ATOMIC_CLASHES}{EVAL_SUFFIX}").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
-        pie_data_df.loc[:, "color"] = pie_data_df.index.map(
-            lambda x: colors[x.split(" ")[0]]
-        )
+        pie_data_df.loc[:, "color"] = pie_data_df.index.map(lambda x: colors[x.split(" ")[0]])
         pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
         labels_map = {
             CATEGORY_GOOD: f"{CATEGORY_GOOD} ({THRESH_ATOMIC_CLASHES_GOOD})",
@@ -653,9 +630,7 @@ class LigandInspector:
         pie_data = df.groupby(f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
-        pie_data_df.loc[:, "color"] = pie_data_df.index.map(
-            lambda x: colors[x.split(" ")[0]]
-        )
+        pie_data_df.loc[:, "color"] = pie_data_df.index.map(lambda x: colors[x.split(" ")[0]])
         pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
         labels_map = {
             CATEGORY_GOOD: f"{CATEGORY_GOOD} ({THRESH_STEREO_CHEMICAL_ERRORS_GOOD})",
@@ -690,9 +665,7 @@ class LigandInspector:
         pie_data = df.groupby(f"{METRIC_AVG_OCCUPANCY}{EVAL_SUFFIX}").size()
         pie_data_df = pd.DataFrame(pie_data)
         pie_data_df = pie_data_df.rename(columns={0: "count"})
-        pie_data_df.loc[:, "color"] = pie_data_df.index.map(
-            lambda x: colors[x.split(" ")[0]]
-        )
+        pie_data_df.loc[:, "color"] = pie_data_df.index.map(lambda x: colors[x.split(" ")[0]])
         pie_data_df.sort_index(inplace=True, key=lambda x: x.map(order))
         labels_map = {
             CATEGORY_GOOD: f"{CATEGORY_GOOD} (>={THRESH_AVG_OCCUPANCY_GOOD})",
@@ -725,10 +698,8 @@ class LigandInspector:
 
         """
         pie_data_df = df.copy()
-        pie_data_df.loc[:, f"Count of '{category}' {EVAL_TERM_PLURAL}"] = (
-            pie_data_df[EVAL_COLUMNS].apply(
-                lambda x: (x == category).sum(), axis=1
-            )
+        pie_data_df.loc[:, f"Count of '{category}' {EVAL_TERM_PLURAL}"] = pie_data_df[EVAL_COLUMNS].apply(
+            lambda x: (x == category).sum(), axis=1
         )
 
         p = ParetoPlot(pie_data_df)
@@ -741,37 +712,64 @@ class LigandInspector:
         )
 
 
-
 @click.command()
-@click.option('--ligand-id-file', '-l',
-              type=click.Path(),
-              default=None,
-              show_default=True,
-              help="Path to the input file containing ligand IDs.")
-@click.option('--output-file', '-o',
-              type=click.Path(exists=False),
-              required=True,
-              help="Path to the output file where results will be saved.")
-@click.option('--only-chain', "-oc",
-                type=click.STRING,
-                help="If set, only the specified chain will be inspected.")
-@click.option("--only-SOI", "-os",
-                is_flag=True,
-                help="If set, only the ligands that are subject of investigation will be inspected.")
-@click.option('--logging-level', '-ll',
-              type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], case_sensitive=False),
-              default='INFO',
-              help="Set the logging level; Choices are DEBUG, INFO, WARNING, ERROR, CRITICAL. Default is INFO.")
-@click.option("--log-file", "-lf",
-              type=click.Path(exists=False),
-              default="ligandqc.log",
-                help="Path to the log file. Default is ligandqc.log.")
-@click.option("--pdb-constraint-file", "-pcf",
-              type=click.Path(),
-              default=None,
-              help="Path to the PDB constraint file. If specified, the results will only show ligands in the specified PDB IDs. The file should contain one PDB ID per line.")
-
-def inspect(ligand_id_file, output_file, only_chain, only_soi, logging_level, log_file, pdb_constraint_file):
+@click.option(
+    "--ligand-id-file",
+    "-l",
+    type=click.Path(),
+    default=None,
+    show_default=True,
+    help="Path to the input file containing ligand IDs.",
+)
+@click.option(
+    "--output-file",
+    "-o",
+    type=click.Path(exists=False),
+    required=True,
+    help="Path to the output file where results will be saved.",
+)
+@click.option(
+    "--only-chain",
+    "-oc",
+    type=click.STRING,
+    help="If set, only the specified chain will be inspected.",
+)
+@click.option(
+    "--only-SOI",
+    "-os",
+    is_flag=True,
+    help="If set, only the ligands that are subject of investigation will be inspected.",
+)
+@click.option(
+    "--logging-level",
+    "-ll",
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False),
+    default="INFO",
+    help="Set the logging level; Choices are DEBUG, INFO, WARNING, ERROR, CRITICAL. Default is INFO.",
+)
+@click.option(
+    "--log-file",
+    "-lf",
+    type=click.Path(exists=False),
+    default="ligandqc.log",
+    help="Path to the log file. Default is ligandqc.log.",
+)
+@click.option(
+    "--pdb-constraint-file",
+    "-pcf",
+    type=click.Path(),
+    default=None,
+    help="Path to the PDB constraint file. If specified, the results will only show ligands in the specified PDB IDs. The file should contain one PDB ID per line.",
+)
+def inspect(
+    ligand_id_file,
+    output_file,
+    only_chain,
+    only_soi,
+    logging_level,
+    log_file,
+    pdb_constraint_file,
+):
     """
     Inspect a batch of ligands or PDB ids and reports their quality metrics and interpretations. You must provide either the ligand ID file or the PDB constraint file, or both. If none is provided, the inspection cannot proceed.
     """
@@ -782,7 +780,7 @@ def inspect(ligand_id_file, output_file, only_chain, only_soi, logging_level, lo
         ligand_ids = []
     elif os.path.exists(ligand_id_file):
         logger.info(f"Reading input file {ligand_id_file}...")
-        with open(ligand_id_file, 'r') as f:
+        with open(ligand_id_file, "r") as f:
             ligand_ids = f.read().splitlines()
             ligand_ids = [ligand_id.strip() for ligand_id in ligand_ids]
             while "" in ligand_ids:
@@ -794,7 +792,7 @@ def inspect(ligand_id_file, output_file, only_chain, only_soi, logging_level, lo
 
     if pdb_constraint_file:
         logger.info(f"Reading PDB constraint file {pdb_constraint_file}...")
-        with open(pdb_constraint_file, 'r') as f:
+        with open(pdb_constraint_file, "r") as f:
             pdb_ids = f.read().splitlines()
             pdb_ids = [pdb_id.strip() for pdb_id in pdb_ids]
             while "" in pdb_ids:
@@ -808,24 +806,24 @@ def inspect(ligand_id_file, output_file, only_chain, only_soi, logging_level, lo
         pdb_ids = []
 
     li = LigandInspector()
-    results = li.inspect(ligand_ids=ligand_ids, pdb_ids=pdb_ids, only_chain=only_chain,only_SOI=only_soi)
-    
+    results = li.inspect(ligand_ids=ligand_ids, pdb_ids=pdb_ids, only_chain=only_chain, only_SOI=only_soi)
+
     logger.info("Evaluating the provided data...")
     results = li.evaluate(results)
 
     # Save the results to the specified output file
     logger.info(f"Saving results to {output_file}...")
     if output_file.endswith((".yaml", ".yml")):
-        with open(output_file, 'w') as f:
-            yaml.dump(results.to_dict(orient='records'), f)
+        with open(output_file, "w") as f:
+            yaml.dump(results.to_dict(orient="records"), f)
     elif output_file.endswith(".json"):
-        results.to_json(output_file, orient='records', lines=True)
+        results.to_json(output_file, orient="records", lines=True)
     elif output_file.endswith(".xlsx"):
         results.to_excel(output_file, index=False)
     elif output_file.endswith(".html"):
         results.to_html(output_file, index=False)
     elif output_file.endswith(".txt"):
-        results.to_csv(output_file, sep='\t', index=False)
+        results.to_csv(output_file, sep="\t", index=False)
     elif output_file.endswith(".csv"):
         results.to_csv(output_file, index=False)
     elif output_file.endswith(".md"):
@@ -836,14 +834,20 @@ def inspect(ligand_id_file, output_file, only_chain, only_soi, logging_level, lo
 
 
 @click.command()
-@click.option('--input-file', '-i', 
-              type=click.Path(exists=True),
-              required=True,
-              help="Path to the input CSV file containing the ligand quality data (output of the inspect command).")
-@click.option('--output-file', '-o', 
-              required=True, 
-              type=click.Path(exists=False),
-              help="Path to the output file where the plot will be saved (e.g., .png, .jpg, .pdf).")
+@click.option(
+    "--input-file",
+    "-i",
+    type=click.Path(exists=True),
+    required=True,
+    help="Path to the input CSV file containing the ligand quality data (output of the inspect command).",
+)
+@click.option(
+    "--output-file",
+    "-o",
+    required=True,
+    type=click.Path(exists=False),
+    help="Path to the output file where the plot will be saved (e.g., .png, .jpg, .pdf).",
+)
 def plot(input_file, output_file):
     """
     Plot the results from the input CSV file and save the plot to the specified output file.
@@ -854,11 +858,13 @@ def plot(input_file, output_file):
     li.plot(df, output_file)
     logger.info(f"Plot saved to {output_file}")
 
+
 @click.group()
 def main():
     """
     Ligand Inspector CLI tool.
     """
+
 
 main.add_command(inspect)
 main.add_command(plot)

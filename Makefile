@@ -13,7 +13,15 @@ run_tests:
 	python -m pytest tests --maxfail=1 --disable-warnings
 
 lint:
-	ruff check
+	ruff check ligandqc --config pyproject.toml
+
+lint_fix:
+	ruff check ligandqc --config pyproject.toml --fix
 
 run_tests_complete:
 	python -m pytest tests --disable-warnings
+
+format:
+	black ligandqc --config pyproject.toml
+
+all_tests: format lint run_tests_complete

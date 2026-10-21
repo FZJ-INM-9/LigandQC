@@ -9,11 +9,12 @@ Report generation module for the ligand inspector. This module provides function
 import os
 from pathlib import Path
 
+import click
 import pandas as pd
 from rich.console import Console
 from rich.table import Table
 
-from ligandqc.const import *
+import ligandqc.const as const
 
 
 class ReportGenerator:
@@ -46,10 +47,10 @@ class ReportGenerator:
             None
         """
         output_path = os.fspath(output_path)
-        if output_path.lower().endswith('.csv'):
+        if output_path.lower().endswith(".csv"):
             directory = os.path.dirname(output_path) or "."
             self._generate_csv_report(directory)
-        elif output_path.lower().endswith('.html'):
+        elif output_path.lower().endswith(".html"):
             directory = os.path.dirname(output_path) or "."
             self._generate_html_report(directory)
         else:
@@ -101,37 +102,37 @@ class ReportGenerator:
         Returns:
             tuple[pd.DataFrame, pd.DataFrame]: the across-metrics and single-metric summary tables.
         """
-        categories = [CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD]
+        categories = [const.CATEGORY_GOOD, const.CATEGORY_OK, const.CATEGORY_BAD]
         total = len(self.input_data)
 
         def format_count(value: int) -> str:
             percentage = (value / total * 100) if total else 0.0
             return f"{int(value)} ({percentage:.2f}%)"
 
-        row_labels = list(range(len(EVAL_COLUMNS) + 1))
-        row_labels += [f">={threshold}" for threshold in range(1, len(EVAL_COLUMNS) + 1)]
-        row_labels += [f"<={threshold}" for threshold in range(1, len(EVAL_COLUMNS) + 1)]
+        row_labels = list(range(len(const.EVAL_COLUMNS) + 1))
+        row_labels += [f">={threshold}" for threshold in range(1, len(const.EVAL_COLUMNS) + 1)]
+        row_labels += [f"<={threshold}" for threshold in range(1, len(const.EVAL_COLUMNS) + 1)]
 
         across_metrics_df = pd.DataFrame(index=row_labels, columns=categories, dtype=object)
-        across_metrics_df.index.name = f"Number of {EVAL_TERM_PLURAL}"
+        across_metrics_df.index.name = f"Number of {const.EVAL_TERM_PLURAL}"
         across_metrics_df.columns.name = "Category"
 
         for category in categories:
-            is_category = self.input_data[EVAL_COLUMNS] == category
+            is_category = self.input_data[const.EVAL_COLUMNS] == category
             num_category_per_row = is_category.sum(axis=1)
 
-            for count in range(len(EVAL_COLUMNS) + 1):
+            for count in range(len(const.EVAL_COLUMNS) + 1):
                 value = int((num_category_per_row == count).sum())
                 across_metrics_df.loc[count, category] = format_count(value)
 
-            for threshold in range(1, len(EVAL_COLUMNS) + 1):
+            for threshold in range(1, len(const.EVAL_COLUMNS) + 1):
                 value_at_least = int((num_category_per_row >= threshold).sum())
                 value_at_most = int((num_category_per_row <= threshold).sum())
                 across_metrics_df.loc[f">={threshold}", category] = format_count(value_at_least)
                 across_metrics_df.loc[f"<={threshold}", category] = format_count(value_at_most)
 
-        single_metric_df = pd.DataFrame(index=EVAL_COLUMNS, columns=categories, dtype=object)
-        for col in EVAL_COLUMNS:
+        single_metric_df = pd.DataFrame(index=const.EVAL_COLUMNS, columns=categories, dtype=object)
+        for col in const.EVAL_COLUMNS:
             counts = self.input_data[col].value_counts().reindex(categories, fill_value=0).astype(int)
             for category in categories:
                 count = int(counts.get(category, 0))
@@ -153,12 +154,19 @@ class ReportGenerator:
         console = Console()
         console.print()
 
-        column_colors = COLORS_RICH
+        column_colors = const.COLORS_RICH
 
-        category_table = Table(title=f"Category distribution (Number of {EVAL_TERM_PLURAL})", show_lines=True)
-        category_table.add_column(f"Number of {EVAL_TERM_PLURAL}", style="bold")
+        category_table = Table(
+            title=f"Category distribution (Number of {const.EVAL_TERM_PLURAL})",
+            show_lines=True,
+        )
+        category_table.add_column(f"Number of {const.EVAL_TERM_PLURAL}", style="bold")
         for column in self.across_metrics_df.columns:
-            category_table.add_column(str(column), justify="center", style=column_colors.get(str(column).lower(), "white"))
+            category_table.add_column(
+                str(column),
+                justify="center",
+                style=column_colors.get(str(column).lower(), "white"),
+            )
 
         for row_label in self.across_metrics_df.index:
             row = [str(row_label)]
@@ -169,10 +177,14 @@ class ReportGenerator:
         console.print(category_table)
         console.print()
 
-        summary_table = Table(title=f"{EVAL_TERM} summary (counts and percentages)", show_lines=True)
-        summary_table.add_column(EVAL_TERM, style="bold")
+        summary_table = Table(title=f"{const.EVAL_TERM} summary (counts and percentages)", show_lines=True)
+        summary_table.add_column(const.EVAL_TERM, style="bold")
         for column in self.single_metric_df.columns:
-            summary_table.add_column(str(column), justify="center", style=column_colors.get(str(column).lower(), "white"))
+            summary_table.add_column(
+                str(column),
+                justify="center",
+                style=column_colors.get(str(column).lower(), "white"),
+            )
 
         for evaluation in self.single_metric_df.index:
             row = [str(evaluation)]
@@ -182,12 +194,21 @@ class ReportGenerator:
 
         console.print(summary_table)
 
-import click
-
 
 @click.command()
-@click.option('--output', '-o', required=True, help='Path to save the report (CSV or HTML), alternatively "terminal" for terminal output.')
-@click.option('--input', '-i', type=click.Path(exists=True), required=True, help='Path to the input CSV data file.')
+@click.option(
+    "--output",
+    "-o",
+    required=True,
+    help='Path to save the report (CSV or HTML), alternatively "terminal" for terminal output.',
+)
+@click.option(
+    "--input",
+    "-i",
+    type=click.Path(exists=True),
+    required=True,
+    help="Path to the input CSV data file.",
+)
 def report(output, input):
     """
     generate a report based on the input data and save it to the specified output path.
