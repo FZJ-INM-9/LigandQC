@@ -6,7 +6,6 @@ This utility module provides functionality for generating specific plots related
 
 """
 
-
 from collections.abc import Sequence
 
 import matplotlib.colors as mcolors
@@ -40,9 +39,18 @@ class VennPlot:
             None
         """
         if len(self.datasets) == 2:
-            venn2([set(dataset) for dataset in self.datasets], set_labels=self.labels, ax=ax)
+            venn2(
+                [set(dataset) for dataset in self.datasets],
+                set_labels=self.labels,
+                ax=ax,
+            )
         elif len(self.datasets) == 3:
-            venn3([set(dataset) for dataset in self.datasets], set_labels=self.labels, ax=ax)
+            venn3(
+                [set(dataset) for dataset in self.datasets],
+                set_labels=self.labels,
+                ax=ax,
+            )
+
 
 class ParetoPlot:
     def __init__(self, data: pd.DataFrame):
@@ -95,9 +103,7 @@ class ParetoPlot:
             others_label = f"Others ({n_others})"
 
             # Create new series with "Others" category
-            truncated_counts = pd.concat(
-                [top_counts, pd.Series([others_count], index=[others_label])]
-            )
+            truncated_counts = pd.concat([top_counts, pd.Series([others_count], index=[others_label])])
             value_counts = truncated_counts
 
         # Sort the counts if required
@@ -200,9 +206,6 @@ class ParetoPlot:
                 arrowprops={"arrowstyle": "-|>", "color": line_color_dark, "lw": 2},
                 zorder=10,
             )
-
-
-
 
 
 class ComparativeParetoPlot:

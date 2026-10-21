@@ -16,9 +16,7 @@ from ligandqc.const import *
 
 def gaussian(x, mean, std_dev):
     """Calculate the Gaussian function."""
-    return (1 / (std_dev * np.sqrt(2 * np.pi))) * np.exp(
-        -0.5 * ((x - mean) / std_dev) ** 2
-    )
+    return (1 / (std_dev * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mean) / std_dev) ** 2)
 
 
 def generate_dataset(mean, std_dev, size=1000):
@@ -43,9 +41,7 @@ def calculate_percentage(dataset, reference_std_dev=1.0, reference_mean=0):
     """Calculate the percentage of values within 2 reference standard deviations of the reference mean."""
     lower_bound = reference_mean - 2 * reference_std_dev
     upper_bound = reference_mean + 2 * reference_std_dev
-    percentage_within_bounds = (
-        np.sum((dataset >= lower_bound) & (dataset <= upper_bound)) / len(dataset) * 100
-    )
+    percentage_within_bounds = np.sum((dataset >= lower_bound) & (dataset <= upper_bound)) / len(dataset) * 100
     return percentage_within_bounds
 
 
@@ -61,7 +57,7 @@ class RMSZInterpreter:
         )
         self.ok_bad_threshold = THRESH_RMSZ_BAD_UPPER
         self.precomputed_rmsz_thresholds = {None: 1.0}
-        self.mode =  "single-sided"
+        self.mode = "single-sided"
 
     def interpret_rmsz(self, n, rmsz):
         """
@@ -100,9 +96,7 @@ class RMSZInterpreter:
         # Calculate the F-statistic
         factor = (n / (n - 1)) if n > 1 else 2
         var1 = factor * rmsz**2  # Variance of the first sample (RMSZ)
-        var2 = (
-            self.reference_std_dev**2
-        )  # Variance of the second sample (reference std dev)
+        var2 = self.reference_std_dev**2  # Variance of the second sample (reference std dev)
         F_statistic = var1 / var2 if var1 > var2 else var2 / var1
 
         # Degrees of freedom for each sample
@@ -124,7 +118,6 @@ class RMSZInterpreter:
             "significant": significant,
         }
 
-    
     def find_rmsz_threshold(self, n, alpha=0.05, tol=1e-4):
 
         rmsz_threshold = self.precomputed_rmsz_thresholds.get(n, None)
@@ -135,7 +128,6 @@ class RMSZInterpreter:
         self.precomputed_rmsz_thresholds[n] = calculated_threshold
         return calculated_threshold
 
-        
     def _calculate_rmsz_threshold(self, n, alpha=0.05, tol=1e-4, lb_start=1, ub_start=20):
         """
         Find the rmsz threshold for a given sample size n for the F-test to be significant using the bisection method.
@@ -151,9 +143,7 @@ class RMSZInterpreter:
 
         # Initialize bisection method
         if n >= 13526:
-            raise ValueError(
-                "Sample size n is too large. Please use a smaller sample size."
-            )
+            raise ValueError("Sample size n is too large. Please use a smaller sample size.")
 
         # Perform bisection method to find the rmsz threshold
         lb = lb_start
@@ -161,7 +151,9 @@ class RMSZInterpreter:
         lb_significant = self.perform_f_test(lb, n, alpha)["significant"]
         ub_significant = self.perform_f_test(ub, n, alpha)["significant"]
 
-        assert lb_significant != ub_significant, "Bisection method requires one bound to be significant and the other not."
+        assert (
+            lb_significant != ub_significant
+        ), "Bisection method requires one bound to be significant and the other not."
 
         # accuracy determined by tol
         while abs(ub - lb) > tol:
@@ -169,22 +161,23 @@ class RMSZInterpreter:
             result = self.perform_f_test(mid, n, alpha)
 
             # assign the new bound such that always lb_significant != ub_significant.
-            if (result["significant"] and lb_significant and not ub_significant) or \
-               (not result["significant"] and not lb_significant and ub_significant):
+            if (result["significant"] and lb_significant and not ub_significant) or (
+                not result["significant"] and not lb_significant and ub_significant
+            ):
                 lb = mid
                 lb_significant = result["significant"]
                 continue
-            elif (result["significant"] and not lb_significant and ub_significant) or \
-                 (not result["significant"] and lb_significant and not ub_significant):
+            elif (result["significant"] and not lb_significant and ub_significant) or (
+                not result["significant"] and lb_significant and not ub_significant
+            ):
                 ub = mid
                 ub_significant = result["significant"]
                 continue
 
-
             assert False, "Bisection method failed to converge. Please check the input parameters."
 
         # Save the result and return
-        rounded_value = round(mid, int(np.log10(1 / tol))-1)
+        rounded_value = round(mid, int(np.log10(1 / tol)) - 1)
         return rounded_value
 
     def plot_rationale_categorization(self, output_path=None, alpha=0.05):
@@ -268,9 +261,7 @@ class RMSZInterpreter:
         """
 
         fig, axs = plt.subplots(2, 1, figsize=(7, 6))
-        fig.suptitle(
-            f"Comparison of two Normal Distributions with RMSZ 1.0 and {self.ok_bad_threshold}"
-        )
+        fig.suptitle(f"Comparison of two Normal Distributions with RMSZ 1.0 and {self.ok_bad_threshold}")
         mean = 0
         reference_std_dev = 1.0
         dataset_std_dev = self.ok_bad_threshold
@@ -309,9 +300,7 @@ class RMSZInterpreter:
         gaussian2_x2 = gaussian(x2, mean, dataset_std_dev)
 
         axs[1].plot(x, gaussian1, color="b", label="RMSZ 1.0")
-        axs[1].fill_between(
-            x2, gaussian1_x2, 0, color="b", alpha=opacity, label="RMSZ 1.0"
-        )
+        axs[1].fill_between(x2, gaussian1_x2, 0, color="b", alpha=opacity, label="RMSZ 1.0")
         axs[1].plot(x, gaussian2, color="orange", label=f"RMSZ {self.ok_bad_threshold}")
         axs[1].fill_between(
             x2,
@@ -346,7 +335,6 @@ class RMSZInterpreter:
             plt.show()
 
 
-
 class RMSZInterpreterDoubleSided(RMSZInterpreter):
     def __init__(self):
         self.reference_mean = 0
@@ -377,7 +365,9 @@ class RMSZInterpreterDoubleSided(RMSZInterpreter):
 
         if rmsz <= rmsz_upper_threshold and rmsz >= rmsz_lower_threshold:
             return CATEGORY_GOOD
-        elif (rmsz < self.ok_bad_upper_threshold and rmsz > rmsz_upper_threshold) or (rmsz > self.ok_bad_lower_threshold and rmsz < rmsz_lower_threshold):
+        elif (rmsz < self.ok_bad_upper_threshold and rmsz > rmsz_upper_threshold) or (
+            rmsz > self.ok_bad_lower_threshold and rmsz < rmsz_lower_threshold
+        ):
             return CATEGORY_OK
         else:
             return CATEGORY_BAD
@@ -386,14 +376,13 @@ class RMSZInterpreterDoubleSided(RMSZInterpreter):
         rmsz_threshold = self.precomputed_rmsz_thresholds.get(n, None)
         if rmsz_threshold is not None:
             return rmsz_threshold
-        
+
         # If not precomputed, calculate thresholds
         lower_threshold = self._calculate_rmsz_threshold(n, alpha, tol, lb_start=0.01, ub_start=1)
         upper_threshold = self._calculate_rmsz_threshold(n, alpha, tol, lb_start=1, ub_start=20)
 
         self.precomputed_rmsz_thresholds[n] = (lower_threshold, upper_threshold)
         return (lower_threshold, upper_threshold)
-
 
     def plot_rationale_categorization(self, output_path=None, alpha=0.05):
         """
@@ -550,9 +539,7 @@ class RMSZInterpreterDoubleSided(RMSZInterpreter):
             gaussian_threshold_x2 = gaussian(x2, self.reference_mean, threshold)
 
             axs[1, col].plot(x, gaussian_ref, color="b", label="RMSZ 1.0")
-            axs[1, col].fill_between(
-                x2, gaussian_ref_x2, 0, color="b", alpha=opacity, label="RMSZ 1.0"
-            )
+            axs[1, col].fill_between(x2, gaussian_ref_x2, 0, color="b", alpha=opacity, label="RMSZ 1.0")
             axs[1, col].plot(x, gaussian_threshold, color="orange", label=f"RMSZ {threshold}")
             axs[1, col].fill_between(
                 x2,

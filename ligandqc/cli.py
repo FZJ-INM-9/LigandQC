@@ -6,7 +6,6 @@ This is the main entry point for the Ligand Inspector command line interface.
 
 """
 
-
 import click
 
 from ligandqc import __version__
@@ -38,6 +37,7 @@ version: {__version__}
 
 """)
 
+
 main.add_command(report)
 main.add_command(inspect)
 main.add_command(compare)
@@ -45,6 +45,6 @@ main.add_command(download)
 main.add_command(plot)
 main.add_command(get_all_ids)
 
-    
+
 if __name__ == "__main__":
     main()
