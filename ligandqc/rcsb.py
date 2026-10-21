@@ -7,17 +7,18 @@ It handles all API calls and data processing.
 
 """
 
-import click
-from rcsbapi.data import DataQuery, ALL_STRUCTURES
-from rcsbapi.search import AttributeQuery
-import pandas as pd
-from ligandqc.log import logger
-from itertools import batched
-from tqdm.auto import tqdm
-from ligandqc.const import *
 import re
 from collections import defaultdict
-import json
+from itertools import batched
+
+import click
+import pandas as pd
+from rcsbapi.data import ALL_STRUCTURES, DataQuery
+from rcsbapi.search import AttributeQuery
+from tqdm.auto import tqdm
+
+import ligandqc.const as const
+from ligandqc.log import logger
 
 
 class RCSBInterface:
@@ -38,7 +39,7 @@ class RCSBInterface:
         Returns:
             list: A list of PDB IDs associated with the ligand IDs.
         """
-        logger.info(f"Fetching all PDB IDs for provided ligand_ids...")
+        logger.info("Fetching all PDB IDs for provided ligand_ids...")
         query = AttributeQuery(
             attribute="rcsb_chem_comp_container_identifiers.comp_id",
             operator="in",
@@ -65,25 +66,22 @@ class RCSBInterface:
         # preprocessing input parameters
         if ligand_ids is None:
             if pdb_ids is None:
-                raise ValueError(
-                    "Either ligand_ids or pdb_ids must be provided to fetch ligand quality data."
-                )
-            ligand_ids = [] # technically, no ligand_ids must be set other than to get the PDB IDs, but since they are provided, we can leave them empty.
-
+                raise ValueError("Either ligand_ids or pdb_ids must be provided to fetch ligand quality data.")
+            ligand_ids = (
+                []
+            )  # technically, no ligand_ids must be set other than to get the PDB IDs, but since they are provided, we can leave them empty.
 
         if pdb_ids is None:
             logger.info("Fetching all PDB IDs for the given ligand IDs.")
             pdb_ids = self.get_pdb_ids(ligand_ids)
 
-        logger.info(
-            f"Fetching ligand quality data for {len(ligand_ids)} ligand IDs and {len(pdb_ids)} PDB IDs..."
-        )
+        logger.info(f"Fetching ligand quality data for {len(ligand_ids)} ligand IDs and {len(pdb_ids)} PDB IDs...")
 
         # Fetch data in batches to avoid overwhelming the API
         dfs = []
         n_batches = (len(pdb_ids) + batch_size - 1) // batch_size
         logger.info(f"Processing {n_batches} batches of PDB IDs.")
-        
+
         for batch in tqdm(batched(pdb_ids, batch_size), total=n_batches):
 
             data = self._query_ligand_quality_data(batch)
@@ -105,7 +103,7 @@ class RCSBInterface:
 
         Returns:
             data (list): response data
-        
+
         """
         query = DataQuery(
             input_type="entries",
@@ -138,13 +136,13 @@ class RCSBInterface:
             "Ranking for goodness of fit": "ranking_model_fit",
             "Ranking for geometry": "ranking_model_geometry",
             "Model completeness": "completeness",
-            METRIC_RSR: "RSR",
-            METRIC_RSCC: "RSCC",
-            METRIC_RMSZ_BOND_LENGTH: "mogul_bonds_RMSZ",
-            METRIC_RMSZ_BOND_ANGLE: "mogul_angles_RMSZ",
-            METRIC_AVG_OCCUPANCY: "average_occupancy",
-            METRIC_ATOMIC_CLASHES: "intermolecular_clashes",
-            METRIC_STEREO_CHEMICAL_ERRORS: "stereo_outliers",
+            const.METRIC_RSR: "RSR",
+            const.METRIC_RSCC: "RSCC",
+            const.METRIC_RMSZ_BOND_LENGTH: "mogul_bonds_RMSZ",
+            const.METRIC_RMSZ_BOND_ANGLE: "mogul_angles_RMSZ",
+            const.METRIC_AVG_OCCUPANCY: "average_occupancy",
+            const.METRIC_ATOMIC_CLASHES: "intermolecular_clashes",
+            const.METRIC_STEREO_CHEMICAL_ERRORS: "stereo_outliers",
             "Outliers of bond length": "mogul_bond_outliers",
             "Outliers of bond angle": "mogul_angle_outliers",
             "Number of bonds": "num_mogul_bonds_RMSZ",
@@ -155,9 +153,7 @@ class RCSBInterface:
 
         for i in data:
             if i["nonpolymer_entities"] is None:
-                logger.warning(
-                    f"No nonpolymer entities found for PDB ID: {i['rcsb_id']}. Skipping this entry."
-                )
+                logger.warning(f"No nonpolymer entities found for PDB ID: {i['rcsb_id']}. Skipping this entry.")
                 continue
             for j in i["nonpolymer_entities"]:
 
@@ -168,15 +164,9 @@ class RCSBInterface:
                     this_data = {}
                     this_data["PDB ID"] = i["rcsb_id"]
                     this_data["Ligand occurence in PDB"] = "not evaluated."
-                    this_data["Ligand ID"] = k[
-                        "rcsb_nonpolymer_entity_instance_container_identifiers"
-                    ]["comp_id"]
-                    this_data["Chain ID"] = k[
-                        "rcsb_nonpolymer_entity_instance_container_identifiers"
-                    ]["auth_asym_id"]
-                    this_data["Residue ID"] = k[
-                        "rcsb_nonpolymer_entity_instance_container_identifiers"
-                    ]["auth_seq_id"]
+                    this_data["Ligand ID"] = k["rcsb_nonpolymer_entity_instance_container_identifiers"]["comp_id"]
+                    this_data["Chain ID"] = k["rcsb_nonpolymer_entity_instance_container_identifiers"]["auth_asym_id"]
+                    this_data["Residue ID"] = k["rcsb_nonpolymer_entity_instance_container_identifiers"]["auth_seq_id"]
                     if i["exptl"] is None:
                         this_data["Experimental Method"] = None
                     else:
@@ -188,28 +178,20 @@ class RCSBInterface:
                     else:
 
                         for key, value in key_map.items():
-                            if (
-                                value
-                                in k["rcsb_nonpolymer_instance_validation_score"][0]
-                            ):
-                                this_data[key] = k[
-                                    "rcsb_nonpolymer_instance_validation_score"
-                                ][0][value]
+                            if value in k["rcsb_nonpolymer_instance_validation_score"][0]:
+                                this_data[key] = k["rcsb_nonpolymer_instance_validation_score"][0][value]
                             else:
                                 this_data[key] = None
-                    this_data["Is Subject of Investigation"] = (
-                        this_data["Is Subject of Investigation"] == "Y"
-                    )
+                    this_data["Is Subject of Investigation"] = this_data["Is Subject of Investigation"] == "Y"
 
                     if (this_data["Outliers of bond length"] is not None) and (
                         this_data["Outliers of bond angle"] is not None
                     ):
-                        this_data[METRIC_STRUCTURAL_OUTLIERS] = (
-                            this_data["Outliers of bond length"]
-                            + this_data["Outliers of bond angle"]
+                        this_data[const.METRIC_STRUCTURAL_OUTLIERS] = (
+                            this_data["Outliers of bond length"] + this_data["Outliers of bond angle"]
                         )
                     else:
-                        this_data[METRIC_STRUCTURAL_OUTLIERS] = None
+                        this_data[const.METRIC_STRUCTURAL_OUTLIERS] = None
                     processed_data.append(this_data)
         df = pd.DataFrame(processed_data)
         df = df.drop_duplicates()
@@ -228,7 +210,7 @@ class RCSBInterface:
             ligand_id_output_file (str): path to the output file for ligand IDs
             pdb_id_output_file (str): path to the output file for PDB IDs
             mapping_output_file (str): path to the output file for mapping of PDB IDs to ligand IDs
-        
+
         Returns:
             dict: a dictionary containing the ligand IDs as keys and the PDB IDs in which they occur as values
         """
@@ -237,54 +219,56 @@ class RCSBInterface:
         q = DataQuery(
             input_type="entries",
             input_ids=ALL_STRUCTURES,
-            return_data_list=["nonpolymer_entities.pdbx_entity_nonpoly.comp_id",
-                              "exptl.method",
-                              "nonpolymer_entities.nonpolymer_entity_instances.rcsb_nonpolymer_instance_validation_score.is_subject_of_investigation"]
+            return_data_list=[
+                "nonpolymer_entities.pdbx_entity_nonpoly.comp_id",
+                "exptl.method",
+                "nonpolymer_entities.nonpolymer_entity_instances.rcsb_nonpolymer_instance_validation_score.is_subject_of_investigation",
+            ],
         )
         q.exec(progress_bar=True)
 
         entries_with_ligand = []
         for i in q.get_response()["data"]["entries"]:
-            if i['exptl'] is not None:
-                experimental_method = i['exptl'][0]['method']
+            if i["exptl"] is not None:
+                experimental_method = i["exptl"][0]["method"]
                 if experimental_method != "X-RAY DIFFRACTION":
                     continue
-            if i['nonpolymer_entities'] is not None:
+            if i["nonpolymer_entities"] is not None:
                 entries_with_ligand.append(i)
 
         logger.info(f"Found {len(entries_with_ligand)} entries with ligands in the Protein Data Bank.")
 
         ligand_id_pattern = re.compile(r"^[0-9A-Z]{3}$")
         invalid_ligand_ids = set()
-        mapping = defaultdict(lambda: [])
+        mapping = defaultdict(list)
         for i in entries_with_ligand:
             for j in i["nonpolymer_entities"]:
                 lig_id = j["pdbx_entity_nonpoly"]["comp_id"]
                 if not ligand_id_pattern.match(lig_id):
                     invalid_ligand_ids.add(lig_id)
                     continue
-                
-                nonpolymer_entity_instances = j['nonpolymer_entity_instances']
+
+                nonpolymer_entity_instances = j["nonpolymer_entity_instances"]
 
                 # check if any of the nonpolymer_entity_instances are subject of investigation
                 if nonpolymer_entity_instances is None:
                     continue
 
                 for k in nonpolymer_entity_instances:
-                    if k['rcsb_nonpolymer_instance_validation_score'] is None:
+                    if k["rcsb_nonpolymer_instance_validation_score"] is None:
                         continue
-                    for l in k['rcsb_nonpolymer_instance_validation_score']:
-                        if l.get('is_subject_of_investigation', "N") == "Y":
+                    for l in k["rcsb_nonpolymer_instance_validation_score"]:
+                        if l.get("is_subject_of_investigation", "N") == "Y":
                             # add the PDB ID to the mapping if it is not already present
-                            pdb_id = i['rcsb_id']
+                            pdb_id = i["rcsb_id"]
                             mapping[lig_id].append(pdb_id)
-        
+
         logger.info(f"Found {len(mapping)} valid ligand IDs.")
 
         # export to files
         ligand_ids = list(mapping.keys())
         ligand_ids.sort()
-        with open(ligand_id_output_file, 'w') as f:
+        with open(ligand_id_output_file, "w") as f:
             f.write("\n".join(ligand_ids))
         logger.info(f"Exported {len(ligand_ids)} ligand IDs to {ligand_id_output_file}.")
 
@@ -294,17 +278,17 @@ class RCSBInterface:
             pdb_ids.update(i)
         pdb_ids = list(pdb_ids)
         pdb_ids.sort()
-        with open(pdb_id_output_file, 'w') as f:
+        with open(pdb_id_output_file, "w") as f:
             f.write("\n".join(pdb_ids))
         logger.info(f"Exported {len(pdb_ids)} PDB IDs to {pdb_id_output_file}.")
 
         # export mapping
-        mapping_condensed = defaultdict(lambda: [])
+        mapping_condensed = defaultdict(list)
         for k, v in mapping.items():
             counter = defaultdict(lambda: 0)
             for i in v:
                 counter[i] += 1
-            for i in counter.keys():
+            for i in counter:
                 mapping_condensed[k].append(f"{i} ({counter[i]})")
         data = [{"Ligand ID": k, "PDB IDs": ";".join(sorted(v))} for k, v in mapping_condensed.items()]
         df = pd.DataFrame(data)
@@ -314,34 +298,38 @@ class RCSBInterface:
         logger.info(f"Exported mapping to {mapping_output_file}.")
 
         if invalid_ligand_ids:
-            logger.warning(f"{len(invalid_ligand_ids)} invalid ligand IDs found: {', '.join(sorted(invalid_ligand_ids))}")
+            logger.warning(
+                f"{len(invalid_ligand_ids)} invalid ligand IDs found: {', '.join(sorted(invalid_ligand_ids))}"
+            )
 
         return mapping
-                
 
 
-        
-
-        
 @click.command()
-@click.option('--ligand-id-output-file',
-              "-ol",
-              type=click.Path(exists=False),
-              help="Path to the output file for ligand IDs.",
-              default="ligand_ids.txt",
-              show_default=True)
-@click.option('--pdb-id-output-file',
-              "-op",
-              type=click.Path(exists=False),
-              help="Path to the output file for PDB IDs.",
-              default="pdb_ids.txt",
-              show_default=True)
-@click.option('--mapping-output-file',
-              "-om",
-              type=click.Path(exists=False),
-              help="Path to the output file for the mapping.",
-              default="mapping.csv",
-              show_default=True)
+@click.option(
+    "--ligand-id-output-file",
+    "-ol",
+    type=click.Path(exists=False),
+    help="Path to the output file for ligand IDs.",
+    default="ligand_ids.txt",
+    show_default=True,
+)
+@click.option(
+    "--pdb-id-output-file",
+    "-op",
+    type=click.Path(exists=False),
+    help="Path to the output file for PDB IDs.",
+    default="pdb_ids.txt",
+    show_default=True,
+)
+@click.option(
+    "--mapping-output-file",
+    "-om",
+    type=click.Path(exists=False),
+    help="Path to the output file for the mapping.",
+    default="mapping.csv",
+    show_default=True,
+)
 def get_all_ids(ligand_id_output_file, pdb_id_output_file, mapping_output_file):
     """
     Scrapes the entire PDB for ligand ids and creates a mapping of PDB IDs to ligand IDs.
@@ -356,6 +344,7 @@ def get_all_ids(ligand_id_output_file, pdb_id_output_file, mapping_output_file):
     """
     interface = RCSBInterface()
     interface.get_all_ids(ligand_id_output_file, pdb_id_output_file, mapping_output_file)
+
 
 if __name__ == "__main__":
     get_all_ids()

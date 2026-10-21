@@ -175,7 +175,7 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 
-tests/output_files/
+tests/output_files*
 analysis/data/
 data_curation.ipynb
 analysis.ipynb
