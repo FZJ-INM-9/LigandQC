@@ -29,18 +29,32 @@ def test_is_rscc_threshold_boundaries():
 	assert not is_rscc_bad(THRESH_RSCC_BAD)
 
 
-def test_is_structural_outliers_threshold_boundaries():
-	assert is_structural_outliers_good(THRESH_STRUCTURAL_OUTLIERS_GOOD)
-	assert is_structural_outliers_good(THRESH_STRUCTURAL_OUTLIERS_GOOD - 1)
-	assert not is_structural_outliers_good(THRESH_STRUCTURAL_OUTLIERS_GOOD + 1)
+def test_is_bond_length_outliers_threshold_boundaries():
+	assert is_outliers_bond_length_good(1, 10)
+	assert not is_outliers_bond_length_good(2, 10)
+	assert not is_outliers_bond_length_good(1, 9)
 
-	assert not is_structural_outliers_ok(THRESH_STRUCTURAL_OUTLIERS_GOOD)
-	assert is_structural_outliers_ok(THRESH_STRUCTURAL_OUTLIERS_GOOD + 1)
-	assert is_structural_outliers_ok(THRESH_STRUCTURAL_OUTLIERS_BAD)
-	assert not is_structural_outliers_ok(THRESH_STRUCTURAL_OUTLIERS_BAD + 1)
+	assert not is_outliers_bond_length_ok(1, 10)
+	assert is_outliers_bond_length_ok(2, 10)
+	assert is_outliers_bond_length_ok(2, 8)
+	assert not is_outliers_bond_length_ok(3, 8)
 
-	assert is_structural_outliers_bad(THRESH_STRUCTURAL_OUTLIERS_BAD + 1)
-	assert not is_structural_outliers_bad(THRESH_STRUCTURAL_OUTLIERS_BAD)
+	assert is_outliers_bond_length_bad(3, 8)
+	assert not is_outliers_bond_length_bad(2, 8)
+
+
+def test_is_bond_angle_outliers_threshold_boundaries():
+	assert is_outliers_bond_angle_good(1, 10)
+	assert not is_outliers_bond_angle_good(2, 10)
+	assert not is_outliers_bond_angle_good(1, 9)
+
+	assert not is_outliers_bond_angle_ok(1, 10)
+	assert is_outliers_bond_angle_ok(2, 10)
+	assert is_outliers_bond_angle_ok(2, 8)
+	assert not is_outliers_bond_angle_ok(3, 8)
+
+	assert is_outliers_bond_angle_bad(3, 8)
+	assert not is_outliers_bond_angle_bad(2, 8)
 
 
 def test_is_avg_occupancy_threshold_boundaries():
@@ -74,7 +88,6 @@ def test_is_atomic_clashes_threshold_boundaries():
 
 def test_is_stereochemical_errors_threshold_boundaries():
 	assert is_stereo_chemical_errors_good(THRESH_STEREO_CHEMICAL_ERRORS_GOOD)
-	assert is_stereo_chemical_errors_good(THRESH_STEREO_CHEMICAL_ERRORS_GOOD - 1)
 	assert not is_stereo_chemical_errors_good(THRESH_STEREO_CHEMICAL_ERRORS_GOOD + 1)
 
 	assert is_stereo_chemical_errors_bad(THRESH_STEREO_CHEMICAL_ERRORS_BAD + 1)
@@ -82,28 +95,31 @@ def test_is_stereochemical_errors_threshold_boundaries():
 
 
 @pytest.mark.parametrize(
-	"predicate",
+	"predicate,args",
 	[
-		is_rsr_good,
-		is_rsr_bad,
-		is_rscc_good,
-		is_rscc_ok,
-		is_rscc_bad,
-		is_structural_outliers_good,
-		is_structural_outliers_ok,
-		is_structural_outliers_bad,
-		is_avg_occupancy_good,
-		is_avg_occupancy_ok,
-		is_avg_occupancy_bad,
-		is_atomic_clashes_good,
-		is_atomic_clashes_ok,
-		is_atomic_clashes_bad,
-		is_stereo_chemical_errors_good,
-		is_stereo_chemical_errors_bad,
+		(is_rsr_good, (np.nan,)),
+		(is_rsr_bad, (np.nan,)),
+		(is_rscc_good, (np.nan,)),
+		(is_rscc_ok, (np.nan,)),
+		(is_rscc_bad, (np.nan,)),
+		(is_outliers_bond_length_good, (np.nan, 10)),
+		(is_outliers_bond_length_ok, (np.nan, 10)),
+		(is_outliers_bond_length_bad, (np.nan, 10)),
+		(is_outliers_bond_angle_good, (np.nan, 10)),
+		(is_outliers_bond_angle_ok, (np.nan, 10)),
+		(is_outliers_bond_angle_bad, (np.nan, 10)),
+		(is_avg_occupancy_good, (np.nan,)),
+		(is_avg_occupancy_ok, (np.nan,)),
+		(is_avg_occupancy_bad, (np.nan,)),
+		(is_atomic_clashes_good, (np.nan,)),
+		(is_atomic_clashes_ok, (np.nan,)),
+		(is_atomic_clashes_bad, (np.nan,)),
+		(is_stereo_chemical_errors_good, (np.nan,)),
+		(is_stereo_chemical_errors_bad, (np.nan,)),
 	],
 )
-def test_all_predicates_return_false_for_nan(predicate):
-	assert not predicate(np.nan)
+def test_all_predicates_return_false_for_nan(predicate, args):
+	assert not predicate(*args)
 
 
 

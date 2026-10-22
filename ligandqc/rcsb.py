@@ -143,8 +143,8 @@ class RCSBInterface:
             const.METRIC_AVG_OCCUPANCY: "average_occupancy",
             const.METRIC_ATOMIC_CLASHES: "intermolecular_clashes",
             const.METRIC_STEREO_CHEMICAL_ERRORS: "stereo_outliers",
-            "Outliers of bond length": "mogul_bond_outliers",
-            "Outliers of bond angle": "mogul_angle_outliers",
+            const.METRIC_OUTLIERS_BOND_LENGTH: "mogul_bond_outliers",
+            const.METRIC_OUTLIERS_BOND_ANGLE: "mogul_angle_outliers",
             "Number of bonds": "num_mogul_bonds_RMSZ",
             "Number of angles": "num_mogul_angles_RMSZ",
             "Number of atoms": "natoms_eds",
@@ -184,14 +184,6 @@ class RCSBInterface:
                                 this_data[key] = None
                     this_data["Is Subject of Investigation"] = this_data["Is Subject of Investigation"] == "Y"
 
-                    if (this_data["Outliers of bond length"] is not None) and (
-                        this_data["Outliers of bond angle"] is not None
-                    ):
-                        this_data[const.METRIC_STRUCTURAL_OUTLIERS] = (
-                            this_data["Outliers of bond length"] + this_data["Outliers of bond angle"]
-                        )
-                    else:
-                        this_data[const.METRIC_STRUCTURAL_OUTLIERS] = None
                     processed_data.append(this_data)
         df = pd.DataFrame(processed_data)
         df = df.drop_duplicates()

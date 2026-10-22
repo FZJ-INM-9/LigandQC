@@ -1,7 +1,7 @@
-# ligandqc get-all-ids \
-#     -ol ligands.txt \
-#     -op pdb-ids.txt \
-#     -om mapping.txt 
+ligandqc get-all-ids \
+    -ol ligands.txt \
+    -op pdb-ids.txt \
+    -om mapping.txt 
 
 ligandqc inspect \
     --ligand-id-file ligands.txt \

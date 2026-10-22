@@ -46,5 +46,5 @@ class TestReport:
         assert "bad" in output.lower()
         assert "good" in report_generator.across_metrics_df.columns
         assert "Real Space R-Factor Evaluation" in report_generator.single_metric_df.index
-        assert " (10.00%)" in output
+        assert " (11.11%)" in output
     
