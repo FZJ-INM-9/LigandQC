@@ -58,22 +58,8 @@ In this case, we want to explore the quality of a single ligand occurance on a s
     .. tab-item:: CLI
         :sync: cli
 
-        .. code-block:: bash
-
-            cat > ligand_ids.txt << EOF
-            4WI
-            EOF
-
-            cat > pdb_ids.txt << EOF
-            7TLL
-            EOF
-
-            ligandqc inspect \
-                --ligand-id-file ligand_ids.txt \
-                --output-file output.yaml \
-                --pdb-constraint-file pdb_ids.txt \
-                --only-chain "A" \
-                --only-SOI
+        .. literalinclude:: ./_static/tutorial_files/tut1/run.sh
+            :language: bash
 
         This fetches the relevant ligand-quality metrics, evaluates them, and saves the
         result to ``output.yaml``. Changing the output extension will switch the export
@@ -124,20 +110,8 @@ For this tutorial, we investigate the quality of Nirmatrelvir (4WI) across all a
     .. tab-item:: CLI
         :sync: cli
 
-        .. code-block:: bash
-
-            cat > ligands.txt << EOF
-            4WI
-            EOF
-
-            ligandqc inspect \
-                --ligand-id-file ligands.txt \
-                --output-file quality.csv \
-                --only-SOI
-
-            ligandqc plot \
-                --input-file quality.csv \
-                --output-file quality.png
+        .. literalinclude:: ./_static/tutorial_files/tut2/run.sh
+            :language: bash
 
         The output file contains one row per ligand/PDB pair, with a column for each
         quality metric and the evaluation status for each metric.
@@ -239,22 +213,8 @@ In such cases, we recommend to put the ``only_SOI`` flag, as otherwise, crystall
     .. tab-item:: CLI
         :sync: cli
 
-        .. code-block:: bash
-
-            cat > pdb_ids.txt << EOF
-            5REK
-            7TLL
-            5REJ
-            EOF
-
-            ligandqc inspect \
-                --pdb-constraint-file pdb_ids.txt \
-                --output-file ligands_quality.csv \
-                --only-SOI
-            
-            ligandqc plot \
-                --input-file ligands_quality.csv \
-                --output-file ligands_quality.png
+        .. literalinclude:: ./_static/tutorial_files/tut3/run.sh
+            :language: bash
 
         The output file contains one row per ligand/PDB pair, with a column for each
         quality metric and the evaluation status for each metric.
@@ -305,21 +265,8 @@ A less common case where you would want to inspect the quality metrics of the en
     .. tab-item:: CLI
         :sync: cli
 
-        .. code-block:: bash
-
-            ligandqc get-all-ids \
-                -ol ligands.txt \
-                -op pdb-ids.txt \
-                -om mapping.txt 
-            
-            ligandqc inspect \
-                --input-file ligands.txt \
-                --output-file quality.csv \
-                --only-SOI
-            
-            ligandqc plot \
-                --input-file quality.csv \
-                --output-file quality.png
+        .. literalinclude:: ./_static/tutorial_files/tut4/run.sh
+            :language: bash
     
 
 .. card::
@@ -343,13 +290,8 @@ This is useful for structural inspection or downstream modeling work.
     .. tab-item:: CLI
         :sync: cli
 
-        .. code-block:: bash
-
-            echo 4WI > ligands.txt
-
-            ligandqc download \
-                --ligand-id-file ligands.txt \
-                --output-directory .
+        .. literalinclude:: ./_static/tutorial_files/tut5/run.sh
+            :language: bash
 
         This saves a structure file for the requested ligand IDs to the current directory. In this case it's only the one of Nirmatrelvir.
 
@@ -381,60 +323,8 @@ Venn diagram of overlap, comparative Pareto plots, and summary tables. In this e
     .. tab-item:: CLI
         :sync: cli
 
-        .. code-block:: bash
-
-            cat > dataset_a_ligand_ids.txt << EOFF
-            T6M
-            3XI
-            T2Y
-            83W
-            T1V
-            4W8
-            HER
-            OF9
-            0BO
-            H6F
-            NOL
-            EOFF
-
-            cat > dataset_b_ligand_ids.txt << EOFF
-            4W8
-            HER
-            OF9
-            0BO
-            H6F
-            NOL
-            T71
-            MWN
-            KMF
-            8UI
-            VHJ
-            T9P
-            Y48
-            XTP
-            H6L
-            N2X
-            SVL
-            YVG
-            N1U
-            VHM
-            8I7
-            EOFF
-
-            ligandqc inspect \
-                --input-file dataset_a_ligand_ids.txt \
-                --output-file dataset_a_quality.csv \
-                --only-SOI
-
-            ligandqc inspect \
-                --input-file dataset_b_ligand_ids.txt \
-                --output-file dataset_b_quality.csv \
-                --only-SOI
-
-            ligandqc compare \
-                dataset_a_quality.csv dataset_b_quality.csv \
-                --output-dir . \
-                --labels dataset_a,dataset_b
+        .. literalinclude:: ./_static/tutorial_files/tut6/run.sh
+            :language: bash
 
         This saves a set of comparison plots and tables to the output directory.
 

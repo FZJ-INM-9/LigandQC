@@ -127,7 +127,8 @@ class LigandInspector:
         # evaluate the ligand
         df[f"{METRIC_RSCC}{EVAL_SUFFIX}"] = df.apply(self._evaluate_rscc, axis=1)
         df[f"{METRIC_RSR}{EVAL_SUFFIX}"] = df.apply(self._evaluate_rsr_factor, axis=1)
-        df[f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}"] = df.apply(self._evaluate_structural_outliers, axis=1)
+        df[f"{METRIC_OUTLIERS_BOND_LENGTH}{EVAL_SUFFIX}"] = df.apply(self._evaluate_bond_length_outliers, axis=1)
+        df[f"{METRIC_OUTLIERS_BOND_ANGLE}{EVAL_SUFFIX}"] = df.apply(self._evaluate_bond_angle_outliers, axis=1)
         df[f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}"] = df.apply(self._evaluate_stereochemical_errors, axis=1)
         df[f"{METRIC_AVG_OCCUPANCY}{EVAL_SUFFIX}"] = df.apply(self._evaluate_occupancy, axis=1)
         df[f"{METRIC_ATOMIC_CLASHES}{EVAL_SUFFIX}"] = df.apply(self._evaluate_atomic_clashes, axis=1)
@@ -140,12 +141,22 @@ class LigandInspector:
         """
         evaluates the RMSZ-bond-length of the ligand
         """
+        if pd.isna(row[METRIC_RMSZ_BOND_LENGTH]) or pd.isna(row["Number of bonds"]):
+            logger.warning(
+                f"{METRIC_RMSZ_BOND_LENGTH} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as {CATEGORY_UNKNOWN}."
+            )
+            return CATEGORY_UNKNOWN
         return self.rmsz_interpreter.interpret_rmsz(row["Number of bonds"], row[METRIC_RMSZ_BOND_LENGTH])
 
     def _evaluate_rmsz_bond_angle(self, row):
         """
         evaluates the RMSZ-bond-angle of the ligand
         """
+        if pd.isna(row[METRIC_RMSZ_BOND_ANGLE]) or pd.isna(row["Number of angles"]):
+            logger.warning(
+                f"{METRIC_RMSZ_BOND_ANGLE} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as {CATEGORY_UNKNOWN}."
+            )
+            return CATEGORY_UNKNOWN
         return self.rmsz_interpreter.interpret_rmsz(row["Number of angles"], row[METRIC_RMSZ_BOND_ANGLE])
 
     def _evaluate_rscc(self, row):
@@ -160,7 +171,7 @@ class LigandInspector:
             return CATEGORY_BAD
         if pd.isna(row[METRIC_RSCC]):
             logger.warning(
-                f"{METRIC_RSCC} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown."
+                f"{METRIC_RSCC} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as {CATEGORY_UNKNOWN}."
             )
             return CATEGORY_UNKNOWN
 
@@ -176,48 +187,78 @@ class LigandInspector:
             return CATEGORY_BAD
         if pd.isna(row[METRIC_RSR]):
             logger.warning(
-                f"{METRIC_RSR} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown."
+                f"{METRIC_RSR} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as {CATEGORY_UNKNOWN}."
             )
             return CATEGORY_UNKNOWN
 
         raise ValueError(f"{METRIC_RSR} value {row[METRIC_RSR]} is not valid for evaluation.")
 
-    def _evaluate_structural_outliers(self, row):
+    def _evaluate_bond_length_outliers(self, row):
         """
-        evaluates the Structural outliers of the ligand
+        evaluates the percentage of bond-length outliers relative to all bonds.
         """
-        if is_structural_outliers_good(row[METRIC_STRUCTURAL_OUTLIERS]):
-            return CATEGORY_GOOD
-        if is_structural_outliers_ok(row[METRIC_STRUCTURAL_OUTLIERS]):
-            return CATEGORY_OK
-        if is_structural_outliers_bad(row[METRIC_STRUCTURAL_OUTLIERS]):
-            return CATEGORY_BAD
-        if pd.isna(row[METRIC_STRUCTURAL_OUTLIERS]):
+        return self._evaluate_outlier_ratio(
+            row,
+            METRIC_OUTLIERS_BOND_LENGTH,
+            "Number of bonds",
+            THRESH_OUTLIERS_BOND_LENGTH_GOOD,
+            THRESH_OUTLIERS_BOND_LENGTH_BAD,
+        )
+
+    def _evaluate_bond_angle_outliers(self, row):
+        """
+        evaluates the percentage of bond-angle outliers relative to all angles.
+        """
+        return self._evaluate_outlier_ratio(
+            row,
+            METRIC_OUTLIERS_BOND_ANGLE,
+            "Number of angles",
+            THRESH_OUTLIERS_BOND_ANGLE_GOOD,
+            THRESH_OUTLIERS_BOND_ANGLE_BAD,
+        )
+
+    def _evaluate_outlier_ratio(self, row, metric_name, total_name, good_threshold, bad_threshold):
+        """
+        evaluates outlier counts as a fraction of all bond/angle entries.
+        """
+        value = row[metric_name]
+        total = row[total_name]
+        if pd.isna(value) or pd.isna(total) or total == 0:
             logger.warning(
-                f"{METRIC_STRUCTURAL_OUTLIERS} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown."
+                f"{metric_name} value is missing or invalid for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as {CATEGORY_UNKNOWN}."
             )
             return CATEGORY_UNKNOWN
 
-        raise ValueError(
-            f"{METRIC_STRUCTURAL_OUTLIERS} value {row[METRIC_STRUCTURAL_OUTLIERS]} is not valid for evaluation."
-        )
+        proportion = value / total
+        if proportion <= good_threshold:
+            return CATEGORY_GOOD
+        if proportion <= bad_threshold:
+            return CATEGORY_OK
+        return CATEGORY_BAD
 
     def _evaluate_stereochemical_errors(self, row):
         """
         evaluates the stereochemical errors of the ligand
         """
-        if is_stereo_chemical_errors_good(row[METRIC_STEREO_CHEMICAL_ERRORS]):
-            return CATEGORY_GOOD
-        if is_stereo_chemical_errors_bad(row[METRIC_STEREO_CHEMICAL_ERRORS]):
-            return CATEGORY_BAD
         if pd.isna(row[METRIC_STEREO_CHEMICAL_ERRORS]):
             logger.warning(
-                f"{METRIC_STEREO_CHEMICAL_ERRORS} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown."
+                f"{METRIC_STEREO_CHEMICAL_ERRORS} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as {CATEGORY_UNKNOWN}."
             )
             return CATEGORY_UNKNOWN
+        try:
+            stereo_errors = int(row[METRIC_STEREO_CHEMICAL_ERRORS])
+        except (ValueError, TypeError):
+            logger.warning(
+                f"{METRIC_STEREO_CHEMICAL_ERRORS} value is invalid for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as {CATEGORY_UNKNOWN}."
+            )
+            return CATEGORY_UNKNOWN
+        if is_stereo_chemical_errors_good(stereo_errors):
+            return CATEGORY_GOOD
+        if is_stereo_chemical_errors_bad(stereo_errors):
+            return CATEGORY_BAD
 
         raise ValueError(
-            f"{METRIC_STEREO_CHEMICAL_ERRORS} value {row[METRIC_STEREO_CHEMICAL_ERRORS]} is not valid for evaluation."
+            f"{METRIC_STEREO_CHEMICAL_ERRORS} value {row[METRIC_STEREO_CHEMICAL_ERRORS]} with type {type(row[METRIC_STEREO_CHEMICAL_ERRORS])} is not valid for evaluation."
         )
 
     def _evaluate_occupancy(self, row):
@@ -232,7 +273,7 @@ class LigandInspector:
             return CATEGORY_BAD
         if pd.isna(row[METRIC_AVG_OCCUPANCY]):
             logger.warning(
-                f"{METRIC_AVG_OCCUPANCY} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown."
+                f"{METRIC_AVG_OCCUPANCY} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as {CATEGORY_UNKNOWN}."
             )
             return CATEGORY_UNKNOWN
 
@@ -250,7 +291,7 @@ class LigandInspector:
             return CATEGORY_BAD
         if pd.isna(row[METRIC_ATOMIC_CLASHES]):
             logger.warning(
-                f"{METRIC_ATOMIC_CLASHES} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as unknown."
+                f"{METRIC_ATOMIC_CLASHES} value is NaN for PDB ID {row['PDB ID']} and ligand {row['Ligand ID']}. Marking as {CATEGORY_UNKNOWN}."
             )
             return CATEGORY_UNKNOWN
 
@@ -316,7 +357,8 @@ class LigandInspector:
         good/ok/bad evaluations for selected metrics.
         """
         evaluation_columns = [
-            (f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}", METRIC_STRUCTURAL_OUTLIERS),
+            (f"{METRIC_OUTLIERS_BOND_LENGTH}{EVAL_SUFFIX}", METRIC_OUTLIERS_BOND_LENGTH),
+            (f"{METRIC_OUTLIERS_BOND_ANGLE}{EVAL_SUFFIX}", METRIC_OUTLIERS_BOND_ANGLE),
             (f"{METRIC_ATOMIC_CLASHES}{EVAL_SUFFIX}", METRIC_ATOMIC_CLASHES),
             (
                 f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}",
@@ -324,28 +366,6 @@ class LigandInspector:
             ),
             (f"{METRIC_AVG_OCCUPANCY}{EVAL_SUFFIX}", METRIC_AVG_OCCUPANCY),
         ]
-        # threshold_labels = {
-        #     METRIC_STRUCTURAL_OUTLIERS: {
-        #         CATEGORY_GOOD: f"<= {THRESH_STRUCTURAL_OUTLIERS_GOOD}",
-        #         CATEGORY_OK: f"{THRESH_STRUCTURAL_OUTLIERS_GOOD + 1}-{THRESH_STRUCTURAL_OUTLIERS_BAD}",
-        #         CATEGORY_BAD: f"> {THRESH_STRUCTURAL_OUTLIERS_BAD}",
-        #     },
-        #     METRIC_ATOMIC_CLASHES: {
-        #         CATEGORY_GOOD: f"{THRESH_ATOMIC_CLASHES_GOOD}",
-        #         CATEGORY_OK: f"{THRESH_ATOMIC_CLASHES_GOOD + 1}-{THRESH_ATOMIC_CLASHES_BAD}",
-        #         CATEGORY_BAD: f"> {THRESH_ATOMIC_CLASHES_BAD}",
-        #     },
-        #     METRIC_STEREO_CHEMICAL_ERRORS: {
-        #         CATEGORY_GOOD: f"{THRESH_STEREO_CHEMICAL_ERRORS_GOOD}",
-        #         CATEGORY_OK: "N/A",
-        #         CATEGORY_BAD: f"> {THRESH_STEREO_CHEMICAL_ERRORS_BAD}",
-        #     },
-        #     METRIC_AVG_OCCUPANCY: {
-        #         CATEGORY_GOOD: f">= {THRESH_AVG_OCCUPANCY_GOOD}",
-        #         CATEGORY_OK: f"{THRESH_AVG_OCCUPANCY_BAD}-{THRESH_AVG_OCCUPANCY_GOOD}",
-        #         CATEGORY_BAD: f"< {THRESH_AVG_OCCUPANCY_BAD}",
-        #     },
-        # }
         statuses = [CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD]
 
         summary_df = pd.DataFrame(index=[label for _, label in evaluation_columns], columns=statuses)
@@ -406,6 +426,10 @@ class LigandInspector:
             None
 
         """
+        if df.empty:
+            logger.warning("DataFrame is empty. Skipping RSR factor plot.")
+            return
+
         sns.histplot(
             df,
             x=METRIC_RSR,
@@ -468,6 +492,10 @@ class LigandInspector:
 
         """
 
+        if df.empty:
+            logger.warning("DataFrame is empty. Skipping RSCC plot.")
+            return
+
         sns.histplot(
             df,
             x=METRIC_RSCC,
@@ -509,6 +537,11 @@ class LigandInspector:
             None
 
         """
+
+        if df.empty:
+            logger.warning("DataFrame is empty. Skipping RMSZ bond length plot.")
+            return
+
         sns.histplot(
             df,
             x=METRIC_RMSZ_BOND_LENGTH,
@@ -538,6 +571,11 @@ class LigandInspector:
             None
 
         """
+
+        if df.empty:
+            logger.warning("DataFrame is empty. Skipping RMSZ bond angle plot.")
+            return
+
         sns.histplot(
             df,
             x=METRIC_RMSZ_BOND_ANGLE,
@@ -553,33 +591,6 @@ class LigandInspector:
         ax.set_ylabel("Count")
         ax.set_xlim(xmin=0, xmax=5)
         self._update_legend(ax, df, f"{METRIC_RMSZ_BOND_ANGLE}{EVAL_SUFFIX}", f"{EVAL_TERM}")
-
-    def _plot_structural_outliers(self, ax, df, colors):
-        """
-        creates a histogram of the structural outliers values.
-
-        Args:
-            axs (matplotlib.axes._axes.Axes): The axes to plot on.
-            df (pd.DataFrame): A DataFrame containing the inspection results.
-
-        Returns:
-            None
-
-        """
-        sns.histplot(
-            df,
-            x=METRIC_STRUCTURAL_OUTLIERS,
-            binwidth=2.5,
-            binrange=(0, max(df[METRIC_STRUCTURAL_OUTLIERS])),
-            ax=ax,
-            hue=f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}",
-            multiple="stack",
-            palette=colors,
-        )
-        ax.set_xlabel(METRIC_STRUCTURAL_OUTLIERS)
-        ax.set_ylabel("Count")
-        ax.set_xlim(xmin=0, xmax=30)
-        self._update_legend(ax, df, f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}", f"{EVAL_TERM}")
 
     def _plot_atomic_clashes(self, ax, df, colors, order):
         """

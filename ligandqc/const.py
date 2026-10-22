@@ -17,7 +17,9 @@ CATEGORY_ORDER = [CATEGORY_GOOD, CATEGORY_OK, CATEGORY_BAD]
 # metrics
 METRIC_RSR = "Real Space R-Factor"
 METRIC_RSCC = "Real Space Correlation Coefficient"
-METRIC_STRUCTURAL_OUTLIERS = "Structural Outliers"
+METRIC_OUTLIERS_BOND_LENGTH = "Outliers of Bond Length"
+METRIC_OUTLIERS_BOND_ANGLE = "Outliers of Bond Angle"
+METRIC_STRUCTURAL_OUTLIERS = "Structural Outliers"  # deprecated: kept for backwards compatibility with legacy datasets
 METRIC_RMSZ_BOND_LENGTH = "RMSZ Bond Length"
 METRIC_RMSZ_BOND_ANGLE = "RMSZ Bond Angle"
 METRIC_AVG_OCCUPANCY = "Average Occupancy"
@@ -26,7 +28,8 @@ METRIC_STEREO_CHEMICAL_ERRORS = "Stereochemical Errors"
 METRICS = [
     METRIC_RSR,
     METRIC_RSCC,
-    METRIC_STRUCTURAL_OUTLIERS,
+    METRIC_OUTLIERS_BOND_LENGTH,
+    METRIC_OUTLIERS_BOND_ANGLE,
     METRIC_RMSZ_BOND_LENGTH,
     METRIC_RMSZ_BOND_ANGLE,
     METRIC_AVG_OCCUPANCY,
@@ -36,6 +39,8 @@ METRICS = [
 
 METRIC_RSR_SHORT = "RSR"
 METRIC_RSCC_SHORT = "RSCC"
+METRIC_OUTLIERS_BOND_LENGTH_SHORT = "Bond Length Outliers"
+METRIC_OUTLIERS_BOND_ANGLE_SHORT = "Bond Angle Outliers"
 METRIC_STRUCTURAL_OUTLIERS_SHORT = "Outliers"
 METRIC_RMSZ_BOND_LENGTH_SHORT = "RMSZ Bond Length"
 METRIC_RMSZ_BOND_ANGLE_SHORT = "RMSZ Bond Angle"
@@ -45,7 +50,8 @@ METRIC_STEREO_CHEMICAL_ERRORS_SHORT = "Stereo Errors"
 METRICS_SHORT = [
     METRIC_RSR_SHORT,
     METRIC_RSCC_SHORT,
-    METRIC_STRUCTURAL_OUTLIERS_SHORT,
+    METRIC_OUTLIERS_BOND_LENGTH_SHORT,
+    METRIC_OUTLIERS_BOND_ANGLE_SHORT,
     METRIC_RMSZ_BOND_LENGTH_SHORT,
     METRIC_RMSZ_BOND_ANGLE_SHORT,
     METRIC_AVG_OCCUPANCY_SHORT,
@@ -102,21 +108,55 @@ def is_rscc_bad(rscc):
 THRESH_RMSZ_BAD_UPPER = 2.0
 THRESH_RMSZ_BAD_LOWER = 0.5
 
-# Structural Outliers
-THRESH_STRUCTURAL_OUTLIERS_GOOD = 5
-THRESH_STRUCTURAL_OUTLIERS_BAD = 15
+# Outliers of bond length / bond angle as percentage of all bond/angle entries.
+THRESH_OUTLIERS_BOND_LENGTH_GOOD = 0.10
+THRESH_OUTLIERS_BOND_LENGTH_BAD = 0.25
+THRESH_OUTLIERS_BOND_ANGLE_GOOD = 0.10
+THRESH_OUTLIERS_BOND_ANGLE_BAD = 0.25
 
 
-def is_structural_outliers_good(outliers):
-    return outliers <= THRESH_STRUCTURAL_OUTLIERS_GOOD
+def calculate_outlier_percentage(outliers, total):
+    if outliers is None or total in (None, 0):
+        return None
+    return outliers / total
 
 
-def is_structural_outliers_ok(outliers):
-    return (outliers > THRESH_STRUCTURAL_OUTLIERS_GOOD) & (outliers <= THRESH_STRUCTURAL_OUTLIERS_BAD)
+def is_outliers_bond_length_good(outliers, total):
+    proportion = calculate_outlier_percentage(outliers, total)
+    return proportion is not None and proportion <= THRESH_OUTLIERS_BOND_LENGTH_GOOD
 
 
-def is_structural_outliers_bad(outliers):
-    return outliers > THRESH_STRUCTURAL_OUTLIERS_BAD
+def is_outliers_bond_length_ok(outliers, total):
+    proportion = calculate_outlier_percentage(outliers, total)
+    return (
+        proportion is not None
+        and proportion > THRESH_OUTLIERS_BOND_LENGTH_GOOD
+        and proportion <= THRESH_OUTLIERS_BOND_LENGTH_BAD
+    )
+
+
+def is_outliers_bond_length_bad(outliers, total):
+    proportion = calculate_outlier_percentage(outliers, total)
+    return proportion is not None and proportion > THRESH_OUTLIERS_BOND_LENGTH_BAD
+
+
+def is_outliers_bond_angle_good(outliers, total):
+    proportion = calculate_outlier_percentage(outliers, total)
+    return proportion is not None and proportion <= THRESH_OUTLIERS_BOND_ANGLE_GOOD
+
+
+def is_outliers_bond_angle_ok(outliers, total):
+    proportion = calculate_outlier_percentage(outliers, total)
+    return (
+        proportion is not None
+        and proportion > THRESH_OUTLIERS_BOND_ANGLE_GOOD
+        and proportion <= THRESH_OUTLIERS_BOND_ANGLE_BAD
+    )
+
+
+def is_outliers_bond_angle_bad(outliers, total):
+    proportion = calculate_outlier_percentage(outliers, total)
+    return proportion is not None and proportion > THRESH_OUTLIERS_BOND_ANGLE_BAD
 
 
 # Average occupancy
@@ -159,7 +199,7 @@ THRESH_STEREO_CHEMICAL_ERRORS_BAD = 0
 
 
 def is_stereo_chemical_errors_good(errors):
-    return errors <= THRESH_STEREO_CHEMICAL_ERRORS_GOOD
+    return errors == THRESH_STEREO_CHEMICAL_ERRORS_GOOD
 
 
 def is_stereo_chemical_errors_ok(errors):
@@ -180,11 +220,6 @@ EVAL_FUNS = {
         CATEGORY_GOOD: is_rscc_good,
         CATEGORY_OK: is_rscc_ok,
         CATEGORY_BAD: is_rscc_bad,
-    },
-    METRIC_STRUCTURAL_OUTLIERS: {
-        CATEGORY_GOOD: is_structural_outliers_good,
-        CATEGORY_OK: is_structural_outliers_ok,
-        CATEGORY_BAD: is_structural_outliers_bad,
     },
     METRIC_AVG_OCCUPANCY: {
         CATEGORY_GOOD: is_avg_occupancy_good,

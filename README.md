@@ -171,7 +171,7 @@ The metrics provided are:
 - Stereo-chemical errors
 
 The above mentioned metrics alone are not sufficient to assess the quality of a ligand. Together they can provide a good overview.
-In this tool, the ligand stuctures are categorized into "Good", "OK" and "Bad" based rule of thumbs for each metric. An overall category is assigned based on the worst metric category obtained. "Outliers of bond length" and "Outliers of bond angle" have been summarized into "Structural outliers".
+In this tool, the ligand stuctures are categorized into "Good", "OK" and "Bad" based rule of thumbs for each metric. An overall category is assigned based on the worst metric category obtained. The outlier rates for bond lengths and bond angles are evaluated independently as percentages of the total bond and angle counts.
 
 The rule of thumbs go as follows:
 
@@ -181,7 +181,8 @@ The rule of thumbs go as follows:
 | RSCC                    | >= 0.95    | >= 0.8        | < 0.8      | https://doi.org/10.1107/S2059798318002541 |
 | RMSZ-bond-length        | *          | <= 2.0        | > 2.0      | [Link to Mogul FAQ](https://support.ccdc.cam.ac.uk/support/solutions/articles/103000306395-what-is-the-z-score-listed-in-the-summary-statistics-for-each-3d-bond-and-valence-angle-search-result)<br>accessed 2024-04-14                             |
 | RMSZ-bond-angle         | *          | <= 2.0        | > 2.0      | [Link to Mogul FAQ](https://support.ccdc.cam.ac.uk/support/solutions/articles/103000306395-what-is-the-z-score-listed-in-the-summary-statistics-for-each-3d-bond-and-valence-angle-search-result)<br>accessed 2024-04-14                             |
-| Structural Outliers     | <= 5       | <= 15         | > 15       | -                                         |
+| Outliers of bond length | <= 10%     | <= 25%        | > 25%      | -                                         |
+| Outliers of bond angle  | <= 10%     | <= 25%        | > 25%      | -                                         |
 | Average occupancy       | >= 0.95    | >= 0.5        | < 0.5      | -                                         |
 | Atomic clashes          | 0          | <= 2          | > 2        | -                                         |
 | Stereo-chemical errors  | 0          | -             | > 0        | https://doi.org/10.1016/j.str.2021.10.003 |
@@ -252,7 +253,9 @@ Ligand ID: 4WI
 Ligand occurence in PDB: 7
 Model completeness: 1.0
 Outliers of bond angle: 5
+Outliers of bond angle Evaluation: ok
 Outliers of bond length: 3
+Outliers of bond length Evaluation: good
 PDB ID: 7TLL
 RMSZ Bond Angle: 1.23
 RMSZ Bond Angle Evaluation: ok
@@ -266,8 +269,6 @@ Real Space Correlation Coefficient: 0.908
 Real Space Correlation Coefficient Evaluation: ok
 Stereochemical Errors: 0
 Stereochemical Errors Evaluation: good
-Structural Outliers: 8
-Structural Outliers Evaluation: ok
 ```
 
 # :loudspeaker: Acknowledgements

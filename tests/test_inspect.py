@@ -28,8 +28,8 @@ def test_ligandqc_normal():
     assert isinstance(df.at[0, METRIC_RSCC], float)
     assert isinstance(df.at[0, METRIC_RMSZ_BOND_LENGTH], float)
     assert isinstance(df.at[0, METRIC_RMSZ_BOND_ANGLE], float)
-    assert isinstance(df.at[0, "Outliers of bond length"], np.int64)
-    assert isinstance(df.at[0, "Outliers of bond angle"], np.int64)
+    assert isinstance(df.at[0, METRIC_OUTLIERS_BOND_LENGTH], np.int64)
+    assert isinstance(df.at[0, METRIC_OUTLIERS_BOND_ANGLE], np.int64)
     assert isinstance(df.at[0, METRIC_ATOMIC_CLASHES], np.int64)
     assert isinstance(df.at[0, METRIC_STEREO_CHEMICAL_ERRORS], np.int64)
     assert isinstance(df.at[0, "Model completeness"], np.float64)
@@ -39,7 +39,8 @@ def test_ligandqc_normal():
     assert df.loc[0][f"{METRIC_RSCC}{EVAL_SUFFIX}"] == "bad"
     assert df.loc[0][f"{METRIC_RMSZ_BOND_LENGTH}{EVAL_SUFFIX}"] == "good"
     assert df.loc[0][f"{METRIC_RMSZ_BOND_ANGLE}{EVAL_SUFFIX}"] == "good"
-    assert df.loc[0][f"{METRIC_STRUCTURAL_OUTLIERS}{EVAL_SUFFIX}"] == "good"
+    assert df.loc[0][f"{METRIC_OUTLIERS_BOND_LENGTH}{EVAL_SUFFIX}"] == "good"
+    assert df.loc[0][f"{METRIC_OUTLIERS_BOND_ANGLE}{EVAL_SUFFIX}"] == "good"
     assert df.loc[0][f"{METRIC_ATOMIC_CLASHES}{EVAL_SUFFIX}"] == "good"
     assert df.loc[0][f"{METRIC_STEREO_CHEMICAL_ERRORS}{EVAL_SUFFIX}"] == "good"
 
@@ -92,7 +93,7 @@ def test_ligandqc_batch_inspection():
 
 
 def test_plot():
-    file = "tests/input_files/output_table_without_sdf.csv"
+    file = "tests/input_files/example_result_table.csv"
     df = pd.read_csv(file)
     li = LigandInspector()
     li.plot(df, "tests/output_files/plot.png")
@@ -150,7 +151,8 @@ def produce_artificial_data():
     - METRIC_RSCC
     - METRIC_RMSZ_BOND_LENGTH
     - METRIC_RMSZ_BOND_ANGLE
-    - METRIC_STRUCTURAL_OUTLIERS
+    - METRIC_OUTLIERS_BOND_LENGTH
+    - METRIC_OUTLIERS_BOND_ANGLE
     - METRIC_AVG_OCCUPANCY
     - METRIC_ATOMIC_CLASHES
     - METRIC_STEREO_CHEMICAL_ERRORS
@@ -167,7 +169,8 @@ def produce_artificial_data():
         (METRIC_RSCC, 0.0, 1.0, float),
         (METRIC_RMSZ_BOND_LENGTH, 0.9, 3.0, float),
         (METRIC_RMSZ_BOND_ANGLE, 0.9, 5.0, float),
-        (METRIC_STRUCTURAL_OUTLIERS, 0, 20, int),
+        (METRIC_OUTLIERS_BOND_LENGTH, 0, 20, int),
+        (METRIC_OUTLIERS_BOND_ANGLE, 0, 20, int),
         (METRIC_AVG_OCCUPANCY, 0.0, 1.0, float),
         (METRIC_ATOMIC_CLASHES, 0, 5, int),
         (METRIC_STEREO_CHEMICAL_ERRORS, 0, 5, int),

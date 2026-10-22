@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.abspath("../../ligandqc"))
 import importlib.metadata
 import pathlib
 import tomllib
+import ligandqc.const
 
 source_location = pathlib.Path(__file__).parent.parent.parent
 if (source_location / "pyproject.toml").exists():
@@ -46,6 +47,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinx.ext.extlinks",
     "sphinx_design",
+    "sphinx_substitution_extensions",
 ]
 
 
@@ -105,3 +107,28 @@ html_theme_options = {
         },
     ],
 }
+
+rst_epilog = f"""
+
+.. |THRESH_RSR_GOOD| replace:: {ligandqc.const.THRESH_RSR_GOOD}
+.. |THRESH_RSR_BAD| replace:: {ligandqc.const.THRESH_RSR_BAD}
+.. |THRESH_RSCC_GOOD| replace:: {ligandqc.const.THRESH_RSCC_GOOD}
+.. |THRESH_RSCC_BAD| replace:: {ligandqc.const.THRESH_RSCC_BAD}
+.. |THRESH_AVG_OCCUPANCY_GOOD| replace:: {ligandqc.const.THRESH_AVG_OCCUPANCY_GOOD}
+.. |THRESH_AVG_OCCUPANCY_BAD| replace:: {ligandqc.const.THRESH_AVG_OCCUPANCY_BAD}
+.. |THRESH_ATOMIC_CLASHES_GOOD| replace:: {ligandqc.const.THRESH_ATOMIC_CLASHES_GOOD}
+.. |THRESH_ATOMIC_CLASHES_BAD| replace:: {ligandqc.const.THRESH_ATOMIC_CLASHES_BAD}
+.. |THRESH_STEREO_CHEMICAL_ERRORS_GOOD| replace:: {ligandqc.const.THRESH_STEREO_CHEMICAL_ERRORS_GOOD}
+.. |THRESH_STEREO_CHEMICAL_ERRORS_BAD| replace:: {ligandqc.const.THRESH_STEREO_CHEMICAL_ERRORS_BAD}
+.. |THRESH_OUTLIERS_BOND_LENGTH_GOOD| replace:: {ligandqc.const.THRESH_OUTLIERS_BOND_LENGTH_GOOD*100:.0f}%
+.. |THRESH_OUTLIERS_BOND_LENGTH_BAD| replace:: {ligandqc.const.THRESH_OUTLIERS_BOND_LENGTH_BAD*100:.0f}%
+.. |THRESH_OUTLIERS_BOND_ANGLE_GOOD| replace:: {ligandqc.const.THRESH_OUTLIERS_BOND_ANGLE_GOOD*100:.0f}%
+.. |THRESH_OUTLIERS_BOND_ANGLE_BAD| replace:: {ligandqc.const.THRESH_OUTLIERS_BOND_ANGLE_BAD*100:.0f}%
+.. |THRESH_RMSZ_BOND_LENGTH_BAD| replace:: {ligandqc.const.THRESH_RMSZ_BAD_UPPER}
+.. |THRESH_RMSZ_BOND_ANGLE_BAD| replace:: {ligandqc.const.THRESH_RMSZ_BAD_UPPER}
+.. |CATEGORY_GOOD| replace:: {ligandqc.const.CATEGORY_GOOD}
+.. |CATEGORY_OK| replace:: {ligandqc.const.CATEGORY_OK}
+.. |CATEGORY_BAD| replace:: {ligandqc.const.CATEGORY_BAD}
+.. |CATEGORY_UNKNOWN| replace:: {ligandqc.const.CATEGORY_UNKNOWN}
+
+"""

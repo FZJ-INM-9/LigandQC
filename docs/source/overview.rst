@@ -26,30 +26,64 @@ The metrics provided are:
 
 
 The above mentioned metrics alone are not sufficient to assess the quality of a ligand. Together they can provide a good overview.
-In this tool, the ligand stuctures are categorized into "Good", "OK" and "Bad" based rule of thumbs for each metric. An overall category is assigned based on the worst metric category obtained. "Outliers of bond length" and "Outliers of bond angle" have been summarized into "Structural outliers".
+In this tool, the ligand stuctures are categorized into "Good", "OK" and "Bad" based rule of thumbs for each metric. An overall category is assigned based on the worst metric category obtained. The outlier rates for bond lengths and bond angles are evaluated independently as percentages of the total bond and angle counts.
 
 The rule of thumbs go as follows:
 
 
-+-------------------------+----------------------------+-------------------+---------------+--------------------------+
-| metric                  | good                       | ok                | bad           | reference                |
-+=========================+============================+===================+===============+==========================+
-| RSR                     | :math:`\leq 0.4`           | non-existent      | :math:`> 0.4` | :footcite:t:`Smart.2018` |
-+-------------------------+----------------------------+-------------------+---------------+--------------------------+
-| RSCC                    | :math:`\geq 0.95`          | :math:`\geq 0.8`  | :math:`< 0.8` | :footcite:t:`Smart.2018` |
-+-------------------------+----------------------------+-------------------+---------------+--------------------------+
-| RMSZ Bond Length        | see :ref:`rmsz_rationale`  | :math:`\leq 2.0`  | :math:`> 2.0` | :footcite:t:`CCDC.2024`  |
-+-------------------------+----------------------------+-------------------+---------------+--------------------------+
-| RMSZ Bond Angle         | see :ref:`rmsz_rationale`  | :math:`\leq 2.0`  | :math:`> 2.0` | :footcite:t:`CCDC.2024`  |
-+-------------------------+----------------------------+-------------------+---------------+--------------------------+
-| Structural Outliers     | :math:`\leq 5`             | :math:`\leq 15`   | :math:`> 15`  | -                        |
-+-------------------------+----------------------------+-------------------+---------------+--------------------------+
-| Average Occupancy       | :math:`\geq 0.95`          | :math:`\geq 0.5`  | :math:`< 0.5` | -                        |
-+-------------------------+----------------------------+-------------------+---------------+--------------------------+
-| Atomic Clashes          | :math:`0`                  | :math:`\leq 2`    | :math:`> 2`   | -                        |
-+-------------------------+----------------------------+-------------------+---------------+--------------------------+
-| Stereochemical Errors   | :math:`0`                  | non-existent      | :math:`> 0`   | :footcite:t:`Shao.2022`  |
-+-------------------------+----------------------------+-------------------+---------------+--------------------------+
+.. list-table::
+    :header-rows: 1
+
+    * - metric
+      - |CATEGORY_GOOD|
+      - |CATEGORY_OK|
+      - |CATEGORY_BAD|
+      - reference
+    * - RSR                        
+      - :math:`\leq` |THRESH_RSR_GOOD|
+      - non-existent      
+      - :math:`>` |THRESH_RSR_GOOD|    
+      - :footcite:t:`Smart.2018`
+    * - RSCC
+      - :math:`\geq` |THRESH_RSCC_GOOD|
+      - :math:`\geq` |THRESH_RSCC_BAD|
+      - :math:`<` |THRESH_RSCC_BAD|
+      - :footcite:t:`Smart.2018`
+    * - RMSZ Bond Length
+      - see :ref:`rmsz_rationale`         
+      - :math:`\leq` |THRESH_RMSZ_BOND_LENGTH_BAD|  
+      - :math:`>` |THRESH_RMSZ_BOND_LENGTH_BAD|    
+      - :footcite:t:`CCDC.2024` 
+    * - RMSZ Bond Angle            
+      - see :ref:`rmsz_rationale`         
+      - :math:`\leq` |THRESH_RMSZ_BOND_ANGLE_BAD|
+      - :math:`>` |THRESH_RMSZ_BOND_ANGLE_BAD|
+      - :footcite:t:`CCDC.2024` 
+    * - Outliers of bond length
+      - :math:`\leq` |THRESH_OUTLIERS_BOND_LENGTH_GOOD|
+      - :math:`\leq` |THRESH_OUTLIERS_BOND_LENGTH_BAD|
+      - :math:`>` |THRESH_OUTLIERS_BOND_LENGTH_BAD|
+      - none                    
+    * - Outliers of bond angle
+      - :math:`\leq` |THRESH_OUTLIERS_BOND_ANGLE_GOOD|
+      - :math:`\leq` |THRESH_OUTLIERS_BOND_ANGLE_BAD|
+      - :math:`>` |THRESH_OUTLIERS_BOND_ANGLE_BAD|
+      - none                      
+    * - Average Occupancy
+      - :math:`\geq` |THRESH_AVG_OCCUPANCY_GOOD|
+      - :math:`\geq` |THRESH_AVG_OCCUPANCY_BAD|
+      - :math:`<` |THRESH_AVG_OCCUPANCY_BAD|
+      - none                       
+    * - Atomic Clashes
+      - :math:`=` |THRESH_ATOMIC_CLASHES_GOOD|
+      - :math:`\leq` |THRESH_ATOMIC_CLASHES_BAD|
+      - :math:`>` |THRESH_ATOMIC_CLASHES_BAD| 
+      - none                       
+    * - Stereochemical Errors
+      - :math:`=` |THRESH_STEREO_CHEMICAL_ERRORS_GOOD|
+      - :math:`\leq` |THRESH_STEREO_CHEMICAL_ERRORS_BAD|
+      - :math:`>` |THRESH_STEREO_CHEMICAL_ERRORS_BAD|
+      - :footcite:t:`Shao.2022` 
 
 
 .. _rmsz_rationale:

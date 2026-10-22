@@ -12,6 +12,7 @@ import numpy as np
 from scipy.stats import f
 
 from ligandqc.const import *
+from ligandqc.log import logger
 
 
 def gaussian(x, mean, std_dev):
@@ -72,6 +73,8 @@ class RMSZInterpreter:
             str: Interpretation of the RMSZ value.
         """
         rmsz_threshold = self.find_rmsz_threshold(n)
+        if rmsz_threshold is None:
+            return CATEGORY_UNKNOWN
 
         if rmsz <= rmsz_threshold:
             return CATEGORY_GOOD
@@ -124,7 +127,13 @@ class RMSZInterpreter:
         if rmsz_threshold is not None:
             return rmsz_threshold
 
-        calculated_threshold = self._calculate_rmsz_threshold(n, alpha, tol, lb_start=1, ub_start=20)
+        try:
+            calculated_threshold = self._calculate_rmsz_threshold(n, alpha, tol, lb_start=1, ub_start=20)
+        except Exception as e:
+            logger.warning(f"Could not calculate RMSZ threshold for sample size {n}: {e}")
+            # log the exception text
+            logger.info(f"Exception text: {e}")
+            calculated_threshold = None
         self.precomputed_rmsz_thresholds[n] = calculated_threshold
         return calculated_threshold
 
@@ -140,6 +149,8 @@ class RMSZInterpreter:
         Returns:
             float: The rmsz threshold.
         """
+        assert n, f"Sample size n must be provided. Got n={n}"
+        assert n > 1, f"Sample size n must be greater than 1. Got n={n}"
 
         # Initialize bisection method
         if n >= 13526:
@@ -153,7 +164,7 @@ class RMSZInterpreter:
 
         assert (
             lb_significant != ub_significant
-        ), "Bisection method requires one bound to be significant and the other not."
+        ), f"Bisection method requires one bound to be significant and the other not. Please check the input parameters. lb: {lb}, ub: {ub}, lb_significant: {lb_significant}, ub_significant: {ub_significant}, n: {n}, alpha: {alpha}"
 
         # accuracy determined by tol
         while abs(ub - lb) > tol:
