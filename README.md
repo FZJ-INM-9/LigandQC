@@ -131,9 +131,9 @@ ligandqc plot --input-file quality_data.csv --output-file quality_plot.png
 
 The `--input-file` option expects the CSV output produced by the `inspect` command. The `--output-file` option can point to formats such as `.png`, `.svg`, or other formats supported by Matplotlib.
 
-Here's an example of the ligand quality for `4WI`, also known as Nirmatrelvir, a protease inhibitor used in the treatment of COVID-19. As of 2025-05-05, 84 ligand quality entries are available in the PDB.
+Here's an example of the ligand quality for `4WI`, also known as Nirmatrelvir, a protease inhibitor used in the treatment of COVID-19. The repository includes rendered example outputs under the documentation and example-analysis folders.
 
-<img src="docs/source/_static/tutorial_files/tut2/ligands_quality.png" width="400">
+<img src="docs/source/_static/tutorial_files/tut2/quality.png" width="400">
 
 ## :inbox_tray: Download mode
 The download mode retrieves ideal 3D coordinates for ligands from the Cambridge Structural Database (CSD) and saves them as `.sdf` files in a target directory. The command is:
@@ -159,6 +159,7 @@ The `report` command generates a human-readable report from a CSV table, while `
 The goal of this project is to provide a simple and easy to use tool to inspect the quality of ligands in protein structures. The tool will scrape the data from the Protein Data Bank and provide a summary of the quality of the ligand. The tool will also provide a way to save the data to a csv file for further analysis.
 The tool is intended to be used by researchers and scientists who want to quickly inspect the quality of ligands in protein structures.
 Currently, in the Protein Data Bank there are multiple metrics that are used to assess the quality of ligands in protein structures. These metrics are not always easy to find and compare, especially for large datasets.
+
 The metrics provided are:
 - Real Space R-factor (RSR)
 - Real Space Correlation Coefficient (RSCC)
@@ -202,25 +203,38 @@ RMSZ = \sqrt{\frac{1}{N} \sum_{i=1}^{N} Z_i^2}
 ```
 
 The Z-values are normalized to have a mean of 0, therefore the RMSZ value is equivalent to the *standard deviation* of the Z-values. 
-Applying this to the RMSZ-bond-length and RMSZ-bond-angle metrics, we can see that the RMSZ value for the ligand is a measure of the deviation of the bond lengths/angles from the mean bond lengths/angles of the specific type.
-To evaluate the provided RMSZ value, we need to know if the sample size (number of bonds/angles in a ligand) is large enough to prove statistical deviation from the underlying general population.
+
+```math
+s_z = \sqrt{\frac{k}{k-1}} \text{RMSZ}
+```
+
+Applying this to the RMSZ Bond Length and RMSZ Bond Angle 
+metrics, we can see that the RMSZ value for the ligand is a measure of the deviation of the bond
+lengths/angles from the mean bond lengths/angles of the specific type.
+To evaluate the provided RMSZ value, we need to know if the sample size (number of bonds/angles 
+in a ligand) is large enough to prove statistical deviation from the underlying general population.
 This is done by performing a series of **F-tests for equality of variances**. 
 
-The F-test is a statistical test that compares the variances of two populations. The null hypothesis is that the variances are equal, and the alternative hypothesis is that the variances are not equal. The F-test returns a p-value, which is the probability of observing the data given that the null hypothesis is true. If the p-value is less than a certain threshold (usually 5%), we reject the null hypothesis and conclude that the variances are not equal.
-For each ligand, the number of bonds/angles was determined by analysing the molecular structure of the ligand as obtained from the RCSB Ligand Expo using rdkit. 
-A treshold-RMSZ value is determined, below which no statistical deviation can be proven.
-
-Using a bisectional search, the treshold-RMSZ value is determined, below which no statistical deviation can be proven.
-The size of the true population was chosen to be 1E7, which is large enough to be considered infinite compared to the number of bonds/angles typically found in a ligand which we assume to be in the range of 5-200.
+The F-test is a statistical test that compares the variances of two populations. The null hypothesis 
+is that the variances are equal, and the alternative hypothesis is that the variances are not equal. 
+The F-test returns a p-value, which is the probability of observing the data given that the null 
+hypothesis is true. If the p-value is less than a certain threshold (usually 5%), the null 
+hypothesis is rejected and we conclude that the variances are not equal.
+In this software the number of bonds/angles are scraped from the RCSB API along with the RMSZ values. 
+Using a bisectional search algorithm, the treshold-RMSZ value is determined, below which no 
+statistical deviation from the reference distribution can be proven.
+The size of the true population was set to be 1E7, which is large enough to be considered infinite
+compared to the number of bonds/angles typically found in a ligand which we assume to be typically in the 
+range of 5-200.
 
 <p align="middle">
-    <img src="/docs/source/_static/rmsz_categorization.png" width="400">
-    <img src="/docs/source/_static/rmsz_ok_threshold.png" width="400">
+    <img src="docs/source/_static/rmsz_categorization.png" width="400">
+    <img src="docs/source/_static/rmsz_ok_threshold.png" width="400">
 </p>
 
 # :alembic: Examples
 
-Take a look at the 'example_analyses' folder for three examples of how to use the tool. In that folder, there are analyses for (1) all ligands in the PDB, (2) covalent ligands of SARS-CoV-2 Mpro and (3) the ligand Nirmatrelvir (4WI) in the PDB.
+Take a look at the `examples/` directory for example analyses of how to use the tool. The repository currently includes analyses for (1) all ligands in the PDB, (2) covalent ligands of SARS-CoV-2 Mpro, and (3) the ligand Nirmatrelvir (4WI) in the PDB.
 
 Below is an example of how to inspect the ligand quality of the ligand `4WI` in the PDB file `7TLL` for chain `A`. The following command will inspect the ligand quality and save the output to a yaml file:
 
@@ -243,32 +257,37 @@ ligandqc inspect \
 yields the following output:
 
 ```yaml
-Atomic clashes: 0
-Atomic clashes Evaluation: good
-Average occupancy: 1.0
-Average occupancy Evaluation: good
-Chain ID: A
-Identifier: 7TLL_4WI_A_401
-Ligand ID: 4WI
-Ligand occurence in PDB: 7
-Model completeness: 1.0
-Outliers of bond angle: 5
-Outliers of bond angle Evaluation: ok
-Outliers of bond length: 3
-Outliers of bond length Evaluation: good
-PDB ID: 7TLL
-RMSZ Bond Angle: 1.23
-RMSZ Bond Angle Evaluation: ok
-RMSZ Bond Length: 1.43
-RMSZ Bond Length Evaluation: ok
-Ranking for geometry: 0.33
-Ranking for goodness of fit: 0.71
-Real Space R-Factor: 0.09
-Real Space R-Factor Evaluation: good
-Real Space Correlation Coefficient: 0.908
-Real Space Correlation Coefficient Evaluation: ok
-Stereochemical Errors: 0
-Stereochemical Errors Evaluation: good
+- Atomic Clashes: 1
+  Atomic Clashes Evaluation: ok
+  Average Occupancy: 1.0
+  Average Occupancy Evaluation: good
+  Chain ID: A
+  Experimental Method: X-RAY DIFFRACTION
+  Is Subject of Investigation: true
+  Ligand ID: 4WI
+  Ligand occurence in PDB: not evaluated.
+  Model completeness: 1.0
+  Number of angles: 46
+  Number of atoms: 35
+  Number of bonds: 34
+  Outliers of Bond Angle: 5
+  Outliers of Bond Angle Evaluation: ok
+  Outliers of Bond Length: 3
+  Outliers of Bond Length Evaluation: good
+  PDB ID: 7TLL
+  RMSZ Bond Angle: 1.18
+  RMSZ Bond Angle Evaluation: ok
+  RMSZ Bond Length: 1.4
+  RMSZ Bond Length Evaluation: ok
+  Ranking for geometry: 0.3414
+  Ranking for goodness of fit: 0.6644
+  Real Space Correlation Coefficient: 0.921
+  Real Space Correlation Coefficient Evaluation: ok
+  Real Space R-Factor: 0.081
+  Real Space R-Factor Evaluation: good
+  Residue ID: '401'
+  Stereochemical Errors: 0
+  Stereochemical Errors Evaluation: good
 ```
 
 # :loudspeaker: Acknowledgements
