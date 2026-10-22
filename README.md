@@ -27,8 +27,21 @@
 
 # :mag: LigandQC - Ligand Quality Check
 
-LigandQC is a python based utility tool to check the quality of one or more ligands in protein structures. It provides a command line interface (CLI) with several subcommands to inspect, download, plot, report and compare the ligand quality data of one or more ligands across multiple PDB files.
-For more information, please refer to the [documentation](https://readthedocs.org/projects/ligandqc/).
+LigandQC is a python package with a command line interface (CLI) to check the quality 
+of one or more ligands in protein structures via the RSCB API. The provided quality metrics are
+categorized into "Good", "OK" and "Bad" based on rule of thumbs or statistical considerations for 
+each metric.
+
+The CLI provides commands to retrieve and evaluate the quality metrics as well as generate plots 
+and reports from the generated data. The tool can be used to download ligand structures from the
+Cambridge Structural Database (CSD) and compare the quality metrics and dataset overlap of up to 
+three datasets at once. A utility command is provided to analyze the entire PDB as a whole.
+
+The tool is intended to be used by researchers and scientists who want to perform analyses or 
+simulations on a dataset of protein-ligand complexes and want to quickly inspect the quality of 
+the ligands in their curated dataset.
+Tutorials and example analyses on how to use the python package or the CLI are provided in the 
+[repository](https://github.com/FZJ-INM-9/LigandQC) and the [documentation](https://readthedocs.org/projects/ligandqc/).
 
 
 # :sparkles: Features
