@@ -22,6 +22,12 @@
     alt="RWTH Aachen"
   />
 </a>
+<a href="https://doi.org/10.5281/zenodo.23500516">
+  <img
+    src="https://zenodo.org/badge/DOI/10.5281/zenodo.23500516.svg"
+    alt="DOI"
+  />
+</a>
 
 <img src="./docs/source/_static/logo2.png" width="400px" alt="LigandQC Logo" />
 
@@ -41,7 +47,7 @@ The tool is intended to be used by researchers and scientists who want to perfor
 simulations on a dataset of protein-ligand complexes and want to quickly inspect the quality of 
 the ligands in their curated dataset.
 Tutorials and example analyses on how to use the python package or the CLI are provided in the 
-[repository](https://github.com/FZJ-INM-9/LigandQC) and the [documentation](https://readthedocs.org/projects/ligandqc/).
+[repository](https://github.com/FZJ-INM-9/LigandQC) and the [documentation](https://ligandqc.readthedocs.io/en/latest/).
 
 
 # :sparkles: Features
@@ -100,7 +106,7 @@ ligandqc get-all-ids
 
 The `inspect` subcommand reads ligand IDs from a text file and optionally filters by chain or by a list of PDB IDs. The `download` subcommand reads ligand IDs from a file and writes one `.sdf` structure per ligand to an output directory. The `plot` subcommand reads a CSV produced by `inspect` and saves a plot to disk. The `report` command generates a tabular or HTML report from the same CSV input. The `compare` subcommand compares one or more CSV datasets and writes comparison outputs to a directory. The `get-all-ids` command fetches the PDB mapping of ligand IDs and PDB IDs and writes the corresponding files.
 
-For more information on the available commands and options, please refer to the [documentation](https://readthedocs.org/projects/ligandqc/).
+For more information on the available commands and options, please refer to the [documentation](https://ligandqc.readthedocs.io/en/latest/).
 
 ## :mag: Inspection mode
 The inspection mode is used to obtain ligand quality data from the Protein Data Bank and save it to a file. The following command inspects a batch of ligands and writes the results to a YAML file:

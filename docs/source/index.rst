@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 .. _repository: https://github.com/FZJ-INM-9/LigandQC
-.. _documentation: https://readthedocs.org/projects/ligandqc/
+.. _documentation: https://ligandqc.readthedocs.io/en/latest/
 
 ##############################################
 Welcome to **ligandqc** documentation!
